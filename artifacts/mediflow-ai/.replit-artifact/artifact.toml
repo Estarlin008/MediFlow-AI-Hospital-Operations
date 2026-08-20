@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "MediFlow AI"
+description = "Plataforma hospitalaria enterprise para coordinar emergencias, triaje, pacientes, recursos y automatizaciones externas de n8n con datos de demostración."
+version = "1.0.0"
+id = "artifacts/mediflow-ai"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18753
+
+[services.development]
+run = "pnpm --filter @workspace/mediflow-ai run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/mediflow-ai", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/mediflow-ai/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18753"
+BASE_PATH = "/"
