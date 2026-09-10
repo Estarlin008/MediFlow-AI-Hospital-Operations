@@ -1,0 +1,2006 @@
+Quiero que trabajes sobre el proyecto actual de MediFlow AI que ya está construido en Replit.
+
+NO quiero que rehagas el proyecto desde cero.
+
+NO quiero que cambies innecesariamente el diseño visual actual.
+
+NO quiero que introduzcas ASP.NET, Node backend, Express, Firebase, Supabase ni ningún otro backend tradicional.
+
+La arquitectura de integración que quiero utilizar es:
+
+FRONTEND MEDIFLOW
+        ↓
+HTTP / API / WEBHOOKS
+        ↓
+n8n
+        ↓
+Procesamiento, automatización, reglas, validaciones, persistencia e integraciones
+        ↓
+Respuesta al FRONTEND
+
+El frontend se desarrollará y mantendrá en Replit.
+
+n8n será utilizado como motor de procesos y backend/orquestador del sistema.
+
+Tu trabajo en esta etapa es:
+
+1. Auditar completamente el frontend actual.
+2. Detectar y corregir errores funcionales, visuales y de navegación.
+3. Corregir inconsistencias entre las diferentes pantallas.
+4. Organizar correctamente el frontend para que pueda conectarse posteriormente con n8n.
+5. Crear una capa de servicios/API claramente separada de la interfaz.
+6. Eliminar dependencias de datos ficticios hardcodeados donde corresponda.
+7. Mantener datos mock únicamente cuando sean necesarios para que la interfaz pueda seguir funcionando mientras n8n todavía no está conectado.
+8. Preparar contratos de datos claros para la futura integración con n8n.
+9. No implementar lógica clínica compleja directamente en el frontend.
+10. No implementar todavía los workflows de n8n.
+11. No inventar endpoints definitivos de n8n; dejar la integración preparada mediante variables de entorno/configuración.
+12. Mantener la interfaz actual como base visual del producto.
+
+==================================================
+1. CONTEXTO DEL PRODUCTO
+==================================================
+
+MediFlow AI es una plataforma para la gestión del flujo de atención en emergencias hospitalarias.
+
+El MVP debe centrarse principalmente en:
+
+INGRESO DEL PACIENTE
+        ↓
+TRIAJE
+        ↓
+PRIORIZACIÓN
+        ↓
+COLA DE EMERGENCIAS
+        ↓
+ATENCIÓN MÉDICA
+        ↓
+RESULTADO
+        ↓
+ALTA / TRASLADO
+        ↓
+INFORME
+        ↓
+DASHBOARD
+        ↓
+AUDITORÍA
+
+El MVP también contempla gestión básica de camas.
+
+La visión futura de MediFlow puede incluir:
+
+- Laboratorio.
+- Farmacia.
+- Ambulancias.
+- Personal.
+- Quirófanos.
+- Equipos.
+- Registro por voz.
+- Inteligencia predictiva.
+- Integraciones hospitalarias.
+- HL7/FHIR.
+- Aplicación móvil.
+- Portal del paciente.
+
+PERO NO debes permitir que estas funcionalidades futuras compliquen o rompan el flujo principal del MVP.
+
+==================================================
+2. PRINCIPIO FUNDAMENTAL
+==================================================
+
+El frontend NO debe ser el lugar donde se ejecuta la lógica principal de negocio.
+
+El frontend debe encargarse principalmente de:
+
+- Mostrar información.
+- Recibir información del usuario.
+- Validaciones básicas de formularios.
+- Enviar solicitudes.
+- Mostrar estados.
+- Mostrar errores.
+- Mostrar alertas.
+- Actualizar información.
+- Manejar navegación.
+- Gestionar sesión visual.
+- Consumir los servicios de MediFlow.
+
+n8n deberá encargarse posteriormente de:
+
+- Automatizaciones.
+- Procesamiento de flujos.
+- Reglas de negocio.
+- Motor de triaje.
+- Priorización.
+- Alertas automáticas.
+- Actualización de estados.
+- Procesamiento de eventos.
+- Integraciones.
+- Persistencia o comunicación con el sistema de datos que se defina.
+- Generación/procesamiento de información.
+- Automatizaciones futuras.
+
+NO pongas reglas clínicas complejas dentro de componentes visuales.
+
+NO hagas que un componente React/Frontend determine por sí mismo que un paciente es P1, P2 o P3.
+
+El frontend debe enviar los datos del paciente/triaje a un servicio.
+
+Ese servicio deberá estar preparado para enviar la información a n8n.
+
+==================================================
+3. AUDITORÍA GENERAL DEL PROYECTO
+==================================================
+
+Antes de modificar código, inspecciona TODO el proyecto.
+
+Revisa:
+
+- Todas las páginas.
+- Todos los componentes.
+- Rutas.
+- Navegación.
+- Botones.
+- Formularios.
+- Tablas.
+- Tarjetas.
+- Modales.
+- Estados.
+- Filtros.
+- Búsquedas.
+- Datos mock.
+- Servicios.
+- Hooks.
+- Utilidades.
+- Manejo de errores.
+- Variables de entorno.
+- Responsive design.
+- Componentes repetidos.
+- Código muerto.
+- Imports innecesarios.
+- Errores de consola.
+- Errores de TypeScript/JavaScript.
+- Errores de navegación.
+- Links que no llevan a ninguna parte.
+- Botones que aparentan funcionar pero no hacen nada.
+- Formularios que no tienen comportamiento.
+- Estados inconsistentes.
+- Información contradictoria entre pantallas.
+
+Haz primero una lista interna de problemas y después corrígelos.
+
+No elimines funcionalidades solamente porque actualmente sean mock.
+
+==================================================
+4. MANTENER EL DISEÑO VISUAL
+==================================================
+
+El diseño actual de MediFlow AI tiene una identidad visual definida.
+
+Mantener:
+
+- Sidebar azul oscuro.
+- Identidad MediFlow AI.
+- Tipografía.
+- Jerarquía visual.
+- Tarjetas.
+- Espaciado.
+- Botones.
+- Badges.
+- Estados.
+- Iconografía.
+- Estilo hospitalario profesional.
+- Colores utilizados actualmente.
+- Diseño limpio.
+- Dashboard tipo sistema hospitalario.
+
+No reemplazar la interfaz por una plantilla genérica.
+
+No convertirla en un dashboard administrativo genérico.
+
+No eliminar elementos visuales existentes sin una razón funcional.
+
+Cuando sea necesario corregir una pantalla, conserva su apariencia actual.
+
+==================================================
+5. ESTRUCTURA PRINCIPAL DE NAVEGACIÓN
+==================================================
+
+Actualmente la aplicación tiene secciones como:
+
+CENTRO DE CONTROL
+
+- Resumen operativo
+- Emergencias
+- Pacientes
+- Triaje
+
+OPERACIÓN CLÍNICA
+
+- Historial clínico
+- Recursos
+- Laboratorio
+- Farmacia
+- Ambulancias
+- Personal
+
+SISTEMA
+
+- Automatizaciones
+- Auditoría
+- Configuración
+
+Mantén esta estructura general.
+
+Pero diferencia claramente:
+
+MVP FUNCIONAL:
+
+- Resumen operativo
+- Emergencias
+- Pacientes
+- Triaje
+- Historial clínico
+- Recursos / Camas
+- Auditoría
+
+FUNCIONES FUTURAS:
+
+- Laboratorio completo
+- Farmacia
+- Ambulancias
+- Personal
+- Quirófanos
+- Equipos avanzados
+- Voz
+- Automatizaciones avanzadas
+- Predicción
+- Configuración avanzada
+
+Las funcionalidades futuras pueden conservar sus pantallas si ya existen.
+
+No es necesario eliminarlas.
+
+Pero si todavía no tienen backend real, deben manejarse como módulos preparados para integración futura y no fingir que están conectadas a sistemas hospitalarios reales.
+
+==================================================
+6. RESUMEN OPERATIVO / DASHBOARD
+==================================================
+
+La pantalla principal debe representar el estado operativo de emergencias.
+
+Debe mostrar como mínimo:
+
+- Pacientes registrados hoy.
+- Pacientes actualmente en emergencia.
+- Pacientes críticos.
+- Tiempo promedio de espera.
+- Camas disponibles.
+- Camas ocupadas.
+- Cola prioritaria.
+- Alertas operativas.
+
+Los valores NO deben estar repartidos directamente por diferentes componentes.
+
+Crear un modelo de datos central para el dashboard.
+
+Por ejemplo conceptualmente:
+
+DashboardSummary:
+
+{
+  patientsToday,
+  patientsInEmergency,
+  criticalPatients,
+  averageWaitTime,
+  availableBeds,
+  occupiedBeds,
+  priorityQueue,
+  alerts
+}
+
+No es obligatorio utilizar exactamente estos nombres si el proyecto tiene otra convención.
+
+Lo importante es tener una estructura clara.
+
+Preparar un servicio:
+
+getDashboardSummary()
+
+Actualmente puede devolver datos mock.
+
+Posteriormente debe poder llamar a n8n.
+
+==================================================
+7. PACIENTES
+==================================================
+
+La pantalla de pacientes debe permitir:
+
+- Listar pacientes.
+- Buscar por nombre.
+- Buscar por expediente/identificador.
+- Filtrar por estado.
+- Abrir ficha.
+- Registrar paciente.
+
+Cada paciente debe poder tener información como:
+
+- Identificador.
+- Nombre.
+- Edad.
+- Sexo.
+- Tipo de sangre si existe.
+- Alergias.
+- Antecedentes.
+- Medicamentos.
+- Última visita.
+- Estado actual.
+
+IMPORTANTE:
+
+No mezclar "paciente" con "episodio de emergencia".
+
+Un paciente puede tener múltiples episodios.
+
+Conceptualmente:
+
+Paciente
+   ↓
+Episodio de emergencia
+   ↓
+Triaje
+   ↓
+Atención
+
+Preparar las interfaces/modelos necesarios para diferenciar estos conceptos.
+
+==================================================
+8. REGISTRO DE NUEVO PACIENTE
+==================================================
+
+El botón:
+
+"Nuevo paciente"
+
+y:
+
+"Registrar paciente"
+
+deben llevar a un flujo coherente.
+
+El formulario debe contemplar como mínimo:
+
+- Nombre.
+- Identificador si corresponde.
+- Edad.
+- Sexo.
+- Motivo de consulta.
+- Hora de llegada.
+- Síntomas principales.
+- Alergias.
+- Antecedentes.
+- Medicamentos actuales.
+
+Aplicar validaciones básicas en frontend.
+
+Ejemplos:
+
+- Campos obligatorios.
+- Edad válida.
+- Datos incompletos.
+- Formato correcto.
+
+Al enviar:
+
+NO ejecutar lógica clínica en frontend.
+
+Debe existir una función similar conceptualmente a:
+
+createPatient()
+
+o:
+
+registerPatient()
+
+que posteriormente pueda llamar a n8n.
+
+Preparar el servicio para:
+
+POST
+
+N8N_BASE_URL + endpoint correspondiente.
+
+NO colocar una URL real de n8n directamente dentro del componente.
+
+==================================================
+9. EPISODIO DE EMERGENCIA
+==================================================
+
+Al registrar un paciente para emergencia debe existir conceptualmente un episodio.
+
+El frontend debe poder manejar:
+
+- ID del episodio.
+- Paciente.
+- Hora de ingreso.
+- Motivo.
+- Estado.
+- Prioridad.
+- Área.
+- Cama si aplica.
+
+Estados posibles:
+
+- Registrado.
+- En triaje.
+- Esperando atención.
+- En atención.
+- En observación.
+- Dado de alta.
+- Trasladado.
+
+No crear estados arbitrarios diferentes para cada pantalla.
+
+Utilizar un conjunto centralizado de estados.
+
+==================================================
+10. TRIAJE
+==================================================
+
+La pantalla de triaje debe ser preparada específicamente para integración con n8n.
+
+Actualmente existe el concepto:
+
+"n8n calcula y envía prioridad"
+
+Mantener esa idea.
+
+El frontend NO debe calcular la prioridad clínica.
+
+El flujo debe ser:
+
+FRONTEND
+   ↓
+Datos del triaje
+   ↓
+Servicio
+   ↓
+n8n
+   ↓
+Motor de reglas
+   ↓
+Resultado del triaje
+   ↓
+FRONTEND
+
+El frontend debe poder enviar:
+
+- patientId
+- episodeId
+- signos vitales
+- síntomas
+- observaciones
+- fecha/hora
+
+Ejemplo conceptual:
+
+{
+  "patientId": "...",
+  "episodeId": "...",
+  "vitalSigns": {
+    "heartRate": 112,
+    "systolicPressure": 148,
+    "diastolicPressure": 92,
+    "oxygenSaturation": 91,
+    "temperature": 37.8,
+    "respiratoryRate": 22
+  },
+  "symptoms": [],
+  "observations": "..."
+}
+
+No es obligatorio utilizar exactamente este JSON.
+
+Crear tipos/interfaces claramente definidos.
+
+==================================================
+11. RESPUESTA DE TRIAJE
+==================================================
+
+El frontend debe estar preparado para recibir una respuesta de n8n similar conceptualmente a:
+
+{
+  "episodeId": "...",
+  "priority": "P1",
+  "priorityLabel": "Crítica",
+  "reason": "...",
+  "recommendedWaitTime": 0,
+  "requiresImmediateAttention": true,
+  "timestamp": "..."
+}
+
+La interfaz debe mostrar:
+
+- Prioridad.
+- Color/estado.
+- Razón.
+- Tiempo recomendado.
+- Alerta correspondiente.
+- Estado de confirmación.
+
+MUY IMPORTANTE:
+
+No presentar al sistema como sustituto del personal médico.
+
+Debe aparecer una indicación apropiada como:
+
+"La clasificación es una herramienta de apoyo. La decisión final corresponde al personal sanitario."
+
+==================================================
+12. COLA DE EMERGENCIAS
+==================================================
+
+La cola debe mostrar:
+
+- Paciente.
+- Identificador.
+- Prioridad.
+- Motivo.
+- Signos relevantes.
+- Estado.
+- Tiempo de espera.
+- Alerta.
+- Acción disponible.
+
+Debe poder filtrar:
+
+- Todas.
+- P1.
+- P2.
+- P3.
+- Completados si aplica.
+
+La cola debe estar preparada para recibir el orden que determine el backend/n8n.
+
+NO ordenar pacientes utilizando una lógica clínica duplicada en el frontend.
+
+Si n8n devuelve:
+
+[
+ patient A,
+ patient B,
+ patient C
+]
+
+el frontend debe representar ese orden.
+
+Si posteriormente se necesita una actualización:
+
+getEmergencyQueue()
+
+debe poder obtener nuevamente la cola.
+
+==================================================
+13. ACTUALIZACIÓN DE LA COLA
+==================================================
+
+Crear una abstracción para actualizar la cola.
+
+Por ejemplo conceptualmente:
+
+refreshEmergencyQueue()
+
+No colocar lógica directamente en el botón.
+
+Debe existir una capa:
+
+UI
+↓
+Service
+↓
+API/n8n
+
+Actualmente puede utilizar mock data.
+
+Posteriormente:
+
+n8n → respuesta real.
+
+Preparar estados:
+
+- loading
+- success
+- empty
+- error
+
+==================================================
+14. ALERTAS
+==================================================
+
+Las alertas deben ser tratadas como información proveniente del sistema.
+
+Ejemplos:
+
+- Saturación crítica.
+- Tiempo máximo de espera excedido.
+- Paciente que necesita reevaluación.
+- Recurso crítico.
+- Stock crítico si el módulo futuro está activo.
+
+Crear un modelo común de alerta.
+
+Conceptualmente:
+
+{
+  "id": "...",
+  "type": "...",
+  "severity": "critical",
+  "title": "...",
+  "message": "...",
+  "patientId": "...",
+  "episodeId": "...",
+  "createdAt": "...",
+  "read": false
+}
+
+El frontend solo debe representar la alerta.
+
+n8n será posteriormente quien pueda generarla.
+
+==================================================
+15. HISTORIAL CLÍNICO
+==================================================
+
+La pantalla de historial clínico debe diferenciar:
+
+DATOS DEL PACIENTE
+
+de:
+
+EPISODIOS
+
+de:
+
+INFORMACIÓN CLÍNICA DEL EPISODIO.
+
+Al abrir un paciente se debe poder visualizar:
+
+- Edad.
+- Sexo.
+- Sangre si está disponible.
+- Alergias.
+- Condiciones crónicas.
+- Medicamentos activos.
+- Última visita.
+- Episodio actual.
+- Prioridad.
+- Signos vitales.
+- Motivo.
+- Estados.
+- Evolución.
+
+Mantener una presentación clara.
+
+Las alergias deben tener alta visibilidad.
+
+==================================================
+16. RESUMEN CLÍNICO / COPILOTO
+==================================================
+
+Preparar un componente de:
+
+"Resumen clínico"
+
+El frontend debe poder recibir un resumen generado externamente.
+
+No generar diagnóstico clínico mediante JavaScript.
+
+El servicio puede tener conceptualmente:
+
+getClinicalSummary(patientId, episodeId)
+
+Y recibir:
+
+{
+  "summary": "...",
+  "keyFindings": [],
+  "allergies": [],
+  "currentMedications": [],
+  "priority": "P2"
+}
+
+Actualmente puede usar datos mock.
+
+Posteriormente debe consumir n8n.
+
+==================================================
+17. ATENCIÓN MÉDICA
+==================================================
+
+Debe existir un flujo claro para:
+
+- Tomar caso.
+- Ver ficha.
+- Registrar evaluación.
+- Registrar diagnóstico preliminar.
+- Registrar tratamiento.
+- Registrar medicamentos administrados.
+- Registrar estudios solicitados.
+- Registrar observaciones.
+- Cambiar estado.
+
+Estados:
+
+Esperando atención
+↓
+En atención
+↓
+En observación / Alta / Traslado
+
+El frontend no debe decidir qué diagnóstico corresponde.
+
+Solo debe registrar lo introducido por el profesional.
+
+==================================================
+18. CAMAS
+==================================================
+
+La sección Recursos puede mantener:
+
+- Camas.
+- Áreas.
+- Quirófanos.
+- Equipos.
+
+Pero para el MVP funcional, la prioridad debe ser:
+
+CAMAS.
+
+Cada cama debe poder tener:
+
+- ID.
+- Área.
+- Tipo.
+- Estado.
+- Paciente asignado.
+
+Estados mínimos:
+
+- Libre.
+- Ocupada.
+- Fuera de servicio.
+
+El frontend debe poder llamar conceptualmente:
+
+getBeds()
+
+assignBed()
+
+releaseBed()
+
+updateBedStatus()
+
+Estas funciones deberán posteriormente comunicarse con n8n.
+
+No implementar lógica de asignación inteligente dentro del frontend.
+
+==================================================
+19. LABORATORIO
+==================================================
+
+La pantalla existente de laboratorio puede conservarse.
+
+Pero NO asumir que existe una integración real con un LIS.
+
+Debe quedar preparada para recibir:
+
+- Estudio.
+- Paciente.
+- Episodio.
+- Fecha de solicitud.
+- Urgencia.
+- Estado.
+- Resultado.
+- Validación.
+- Indicador crítico.
+
+Estados:
+
+- En proceso.
+- Listo.
+- Validado.
+
+Si actualmente utiliza datos mock, centralizarlos.
+
+No colocar arrays de datos directamente dentro de componentes visuales.
+
+Preparar servicios:
+
+getLabStudies()
+getLabStudy()
+createLabRequest()
+
+para futura integración con n8n.
+
+==================================================
+20. FARMACIA
+==================================================
+
+Mantener la interfaz existente.
+
+Pero tratarla como módulo de expansión.
+
+La pantalla puede mostrar:
+
+- Medicamento.
+- Presentación.
+- Stock.
+- Ubicación.
+- Estado.
+- Stock crítico.
+- Vencimiento.
+
+No desarrollar predicción de consumo todavía.
+
+No desarrollar inteligencia farmacológica.
+
+Preparar solamente la interfaz y capa de servicios.
+
+==================================================
+21. AMBULANCIAS
+==================================================
+
+Mantener la pantalla existente.
+
+Debe quedar preparada para recibir:
+
+- ID de unidad.
+- Estado.
+- Ubicación.
+- ETA.
+- Personal.
+- Mantenimiento.
+
+Estados como:
+
+- En base.
+- En ruta.
+- En traslado.
+- Mantenimiento.
+
+No implementar GPS real.
+
+No simular una integración externa real.
+
+Si se utilizan datos de demostración, identificarlos internamente como mock.
+
+==================================================
+22. PERSONAL
+==================================================
+
+Mantener la pantalla existente.
+
+Preparar información como:
+
+- Nombre.
+- Especialidad.
+- Turno.
+- Estado.
+- Pacientes asignados.
+
+No implementar todavía planificación predictiva de turnos.
+
+==================================================
+23. INFORMES
+==================================================
+
+Preparar una pantalla/flujo para informe de salida.
+
+Debe poder recibir:
+
+- Datos del paciente.
+- Fecha de ingreso.
+- Diagnóstico.
+- Tratamiento.
+- Medicamentos.
+- Recomendaciones.
+- Señales de alarma.
+- Próxima consulta.
+
+La generación final del documento podrá ser responsabilidad de n8n o de un servicio futuro.
+
+El frontend debe tener un botón como:
+
+"Generar informe"
+
+que llame a un servicio.
+
+NO generar el PDF directamente desde el componente.
+
+Preparar una función conceptual:
+
+generateDischargeReport(episodeId)
+
+La respuesta puede ser:
+
+{
+  "reportId": "...",
+  "status": "generated",
+  "url": "..."
+}
+
+No asumir una URL real hasta que n8n esté configurado.
+
+==================================================
+24. AUDITORÍA
+==================================================
+
+La pantalla de auditoría debe permitir visualizar eventos importantes.
+
+Ejemplo:
+
+- Paciente registrado.
+- Episodio creado.
+- Triaje realizado.
+- Prioridad asignada.
+- Prioridad reevaluada.
+- Paciente tomado por médico.
+- Diagnóstico registrado.
+- Tratamiento registrado.
+- Cama asignada.
+- Cama liberada.
+- Alta realizada.
+- Informe generado.
+
+Preparar un servicio:
+
+getAuditEvents()
+
+No inventar eventos clínicos reales.
+
+==================================================
+25. REGISTRO POR VOZ
+==================================================
+
+La interfaz actualmente tiene:
+
+"Registro por voz"
+
+NO eliminarlo necesariamente.
+
+Pero NO implementar todavía un sistema completo de transcripción médico-paciente.
+
+Debe quedar preparado como funcionalidad futura.
+
+Puede mostrar:
+
+"Registro por voz — Próximamente"
+
+o una interfaz preparada para futura integración.
+
+No fingir que existe reconocimiento médico por IA si todavía no está implementado.
+
+==================================================
+26. AUTOMATIZACIONES
+==================================================
+
+La sección:
+
+"Automatizaciones"
+
+debe ser compatible conceptualmente con n8n.
+
+Puede mostrar:
+
+- Estado de conexión.
+- Workflows disponibles.
+- Última ejecución.
+- Estado.
+- Errores.
+
+Pero NO crear workflows de n8n dentro del frontend.
+
+El frontend solamente debe mostrar información que posteriormente pueda recibir desde n8n.
+
+==================================================
+27. INTEGRACIÓN CON N8N
+==================================================
+
+ESTA ES UNA DE LAS PARTES MÁS IMPORTANTES DEL TRABAJO.
+
+Crear una capa de integración independiente.
+
+NO hacer llamadas HTTP directamente desde componentes.
+
+NO hacer:
+
+fetch("https://...")
+
+dentro de:
+
+PatientPage.tsx
+TriagePage.tsx
+EmergencyPage.tsx
+
+etc.
+
+Crear una estructura conceptual similar a:
+
+services/
+    api/
+        client
+        patients
+        emergencies
+        triage
+        clinical
+        beds
+        reports
+        audit
+        dashboard
+
+o una estructura equivalente apropiada para el proyecto actual.
+
+La idea es:
+
+COMPONENTE
+    ↓
+SERVICE
+    ↓
+API CLIENT
+    ↓
+N8N
+
+==================================================
+28. API CLIENT
+==================================================
+
+Crear un cliente HTTP centralizado.
+
+Debe manejar:
+
+- Base URL.
+- Headers.
+- Content-Type.
+- Autenticación futura.
+- Timeout.
+- Errores.
+- Respuestas.
+- Logging de desarrollo.
+
+La URL base debe provenir de una variable de entorno.
+
+Ejemplo conceptual:
+
+VITE_N8N_BASE_URL
+
+NO escribir una URL de n8n fija en múltiples archivos.
+
+NO guardar credenciales secretas de n8n en el frontend.
+
+IMPORTANTE:
+
+Todo lo que se coloque en un frontend puede ser visible para el usuario.
+
+Por tanto:
+
+NO colocar:
+
+- API keys secretas.
+- Passwords.
+- Tokens privados.
+- Credenciales de n8n.
+
+Si n8n necesita autenticación privada, deberá existir posteriormente un mecanismo apropiado para ello.
+
+==================================================
+29. ENDPOINTS / WEBHOOKS
+==================================================
+
+No inventes todavía las URLs finales.
+
+Utilizar una configuración central.
+
+Conceptualmente:
+
+N8N_BASE_URL
+
+y rutas configurables como:
+
+/patients
+/patients/create
+/emergency
+/emergency/queue
+/triage
+/triage/reevaluate
+/clinical/summary
+/beds
+/beds/assign
+/beds/release
+/reports/discharge
+/audit
+/dashboard
+
+Estos son nombres conceptuales.
+
+NO asumas que serán exactamente estas rutas.
+
+La finalidad es que cuando configuremos n8n posteriormente podamos modificar las rutas en un solo lugar.
+
+==================================================
+30. CONTRATOS DE DATOS
+==================================================
+
+Crear interfaces/types centralizados para:
+
+- Patient.
+- EmergencyEpisode.
+- Triage.
+- VitalSigns.
+- Alert.
+- Bed.
+- ClinicalSummary.
+- MedicalAttention.
+- DischargeReport.
+- AuditEvent.
+- DashboardSummary.
+
+No utilizar:
+
+any
+
+para toda la aplicación.
+
+Los datos deben tener estructuras claras.
+
+Si una respuesta de n8n no coincide con el modelo esperado, manejar el error de manera controlada.
+
+==================================================
+31. ESTADOS DE CARGA
+==================================================
+
+Todas las pantallas que posteriormente consumirán n8n deben contemplar:
+
+LOADING
+
+SUCCESS
+
+EMPTY
+
+ERROR
+
+Ejemplo:
+
+Mientras se obtiene la cola:
+
+"Actualizando cola..."
+
+Si no hay pacientes:
+
+"No hay pacientes en espera."
+
+Si falla n8n:
+
+"No se pudo obtener la información. Intenta nuevamente."
+
+NO mostrar pantallas rotas.
+
+NO dejar botones congelados.
+
+==================================================
+32. MANEJO DE ERRORES
+==================================================
+
+Crear un manejo consistente de errores.
+
+Debe existir diferencia entre:
+
+- Error de red.
+- Error de validación.
+- Error de autenticación.
+- Error de servidor.
+- Datos incompletos.
+- Timeout.
+
+Mostrar mensajes comprensibles para el usuario.
+
+No mostrar stack traces al usuario.
+
+Los detalles técnicos pueden registrarse solamente en desarrollo.
+
+==================================================
+33. DATOS MOCK
+==================================================
+
+Mientras n8n todavía no esté conectado, el frontend debe seguir funcionando.
+
+Por eso puedes mantener datos mock.
+
+PERO:
+
+NO colocar datos mock directamente dentro de cada página.
+
+Crear una capa:
+
+mock/
+
+o equivalente.
+
+Por ejemplo:
+
+mockPatients
+mockEpisodes
+mockTriage
+mockBeds
+mockAlerts
+mockDashboard
+
+Los servicios deben poder alternar entre:
+
+MOCK
+
+y:
+
+N8N/API
+
+mediante configuración.
+
+Conceptualmente:
+
+DATA_SOURCE=mock
+
+o:
+
+DATA_SOURCE=n8n
+
+No es necesario utilizar exactamente esta variable si el proyecto usa otro sistema de configuración.
+
+==================================================
+34. MODO MOCK / MODO N8N
+==================================================
+
+Quiero que la aplicación pueda trabajar en dos modos:
+
+MODO DEMOSTRACIÓN
+
+Frontend
+↓
+Mock Services
+
+MODO INTEGRADO
+
+Frontend
+↓
+API Client
+↓
+n8n
+
+Esto permitirá desarrollar el frontend sin tener n8n terminado.
+
+No duplicar componentes para cada modo.
+
+Los componentes deben ser los mismos.
+
+Solo debe cambiar la fuente de datos.
+
+==================================================
+35. REFRESH Y ACTUALIZACIÓN
+==================================================
+
+Los datos como:
+
+- Cola.
+- Alertas.
+- Dashboard.
+- Camas.
+- Estados.
+
+pueden cambiar.
+
+Preparar los servicios para poder actualizarlos.
+
+Por ahora puede utilizarse:
+
+- Refresh manual.
+- Polling si ya existe.
+- Actualización después de una acción.
+
+NO implementar una arquitectura compleja de tiempo real todavía si no es necesaria.
+
+Pero deja la estructura preparada para que posteriormente n8n pueda disparar actualizaciones mediante el mecanismo que se defina.
+
+==================================================
+36. BOTONES
+==================================================
+
+Audita TODOS los botones.
+
+Cada botón debe hacer una de estas cosas:
+
+1. Navegar.
+2. Abrir modal.
+3. Ejecutar acción.
+4. Llamar un servicio.
+5. Mostrar información.
+6. Estar explícitamente marcado como próximamente.
+
+NO dejar botones que aparenten hacer algo pero no tengan comportamiento.
+
+Especialmente revisar:
+
+- Nuevo paciente.
+- Registrar paciente.
+- Actualizar.
+- Actualizar cola.
+- Tomar caso.
+- Atender.
+- Confirmar resultado.
+- Asignar cama.
+- Liberar cama.
+- Generar informe.
+- Sincronizar.
+- Registro por voz.
+- Solicitar mantenimiento.
+- Registrar entrada.
+
+==================================================
+37. BÚSQUEDA
+==================================================
+
+La búsqueda global:
+
+"Buscar paciente, expediente..."
+
+debe comportarse consistentemente.
+
+No tiene que resolver todo el sistema inmediatamente.
+
+Pero debe:
+
+- Buscar pacientes.
+- Buscar expedientes.
+- Mostrar resultados.
+- Permitir abrir el paciente.
+
+Si actualmente solo es visual, corregirlo.
+
+No implementar búsqueda contra n8n hasta que exista el servicio.
+
+Preparar:
+
+searchPatients(query)
+
+==================================================
+38. RESPONSIVE
+==================================================
+
+Revisar todas las pantallas.
+
+La aplicación debe funcionar correctamente en:
+
+- Desktop.
+- Laptop.
+- Tablet.
+
+No es necesario convertirla ahora en una aplicación móvil.
+
+Evitar:
+
+- Elementos cortados.
+- Tablas imposibles de leer.
+- Sidebar rompiéndose.
+- Botones fuera de pantalla.
+- Modales demasiado grandes.
+- Overflow horizontal innecesario.
+
+Mantener prioridad desktop porque MediFlow está pensado como sistema hospitalario operativo.
+
+==================================================
+39. CONSISTENCIA DE DATOS
+==================================================
+
+Actualmente algunas pantallas utilizan nombres y datos distintos.
+
+Auditar especialmente:
+
+- Pacientes.
+- IDs de expediente.
+- IDs de episodio.
+- Estados.
+- Prioridades.
+- Horarios.
+- Camas.
+- Alertas.
+
+Un paciente debe conservar el mismo:
+
+nombre
+identificador
+episodio
+prioridad
+
+cuando se visualiza en:
+
+Dashboard
+Emergencias
+Pacientes
+Triaje
+Historial clínico
+Recursos
+
+No permitir que cada página tenga una versión diferente del mismo paciente.
+
+==================================================
+40. PRIORIDADES
+==================================================
+
+Centralizar los valores de prioridad.
+
+Por ejemplo:
+
+P1
+P2
+P3
+
+Pero no asumir que estos son necesariamente los nombres finales si ya existe otra convención.
+
+Cada prioridad debe tener:
+
+- Código.
+- Nombre.
+- Severidad.
+- Etiqueta visual.
+- Descripción.
+
+NO repetir:
+
+if priority === "P1"
+
+en veinte componentes.
+
+Centralizar esta información.
+
+==================================================
+41. ESTADOS CLÍNICOS
+==================================================
+
+Centralizar también:
+
+- Registrado.
+- En triaje.
+- Esperando atención.
+- En atención.
+- En observación.
+- Alta.
+- Traslado.
+
+Cada estado debe tener:
+
+- Código.
+- Nombre.
+- Etiqueta.
+- Apariencia.
+
+==================================================
+42. SEGURIDAD DE LA INFORMACIÓN
+==================================================
+
+Aunque sea un MVP/prototipo, no tratar los datos clínicos como información pública.
+
+No:
+
+- imprimir información sensible innecesariamente en consola.
+- almacenar secretos en localStorage.
+- exponer credenciales.
+- poner API keys en el código.
+- mostrar errores técnicos al usuario.
+
+Preparar la estructura para autenticación futura.
+
+==================================================
+43. AUTENTICACIÓN Y ROLES
+==================================================
+
+No es necesario crear ahora un sistema de autenticación completo si todavía no existe el backend.
+
+Pero el frontend debe estar preparado para los roles:
+
+- Recepción.
+- Personal de triaje.
+- Médico.
+- Administrador.
+
+Las vistas deben poder restringirse posteriormente.
+
+Preparar una abstracción de usuario/sesión.
+
+No hardcodear:
+
+user.role === "admin"
+
+en toda la aplicación.
+
+Crear un mecanismo centralizado de autorización visual.
+
+==================================================
+44. NO CREAR BACKEND ALTERNATIVO
+==================================================
+
+MUY IMPORTANTE:
+
+NO crear:
+
+- Express.
+- FastAPI.
+- ASP.NET.
+- Firebase backend.
+- Supabase backend.
+- Base de datos local como sustituto permanente.
+- API server separado.
+
+n8n será el backend/orquestador que se integrará posteriormente.
+
+Si Replit necesita un servidor de desarrollo para servir el frontend, eso es diferente y está permitido.
+
+Pero no crear una segunda arquitectura backend.
+
+==================================================
+45. NO MODIFICAR LA LÓGICA DE NEGOCIO DE N8N
+==================================================
+
+No inventar workflows.
+
+No asumir cómo n8n calculará el triaje.
+
+No implementar:
+
+"si SpO2 < 90 entonces P1"
+
+directamente en el frontend.
+
+Esas reglas pertenecen al proceso de negocio que posteriormente construiremos en n8n.
+
+El frontend solo debe enviar la información y representar el resultado.
+
+==================================================
+46. PREPARAR EVENTOS
+==================================================
+
+Diseñar el frontend para trabajar conceptualmente con eventos.
+
+Ejemplos:
+
+PATIENT_CREATED
+TRIAGE_COMPLETED
+TRIAGE_REEVALUATED
+PATIENT_PRIORITY_CHANGED
+PATIENT_TAKEN
+BED_ASSIGNED
+BED_RELEASED
+PATIENT_DISCHARGED
+PATIENT_TRANSFERRED
+REPORT_GENERATED
+ALERT_CREATED
+
+No es obligatorio implementar un sistema de eventos complejo todavía.
+
+Pero los servicios deben estar preparados para recibir respuestas que indiquen qué ocurrió.
+
+==================================================
+47. FLUJO PRINCIPAL QUE DEBE FUNCIONAR EN FRONTEND
+==================================================
+
+Al finalizar esta etapa, el frontend debe poder representar correctamente este flujo:
+
+1. Recepción registra paciente.
+
+2. Se crea el paciente.
+
+3. Se crea/inicia un episodio de emergencia.
+
+4. El paciente aparece como:
+
+"En triaje"
+
+5. Se registran signos vitales y síntomas.
+
+6. El frontend envía esos datos al servicio de triaje.
+
+7. El servicio queda preparado para enviar los datos a n8n.
+
+8. n8n posteriormente devolverá:
+
+P1 / P2 / P3
++
+razón
++
+tiempo recomendado
++
+alertas
+
+9. El frontend muestra el resultado.
+
+10. El paciente aparece en la cola.
+
+11. El paciente puede ser reevaluado.
+
+12. El médico puede abrir su ficha.
+
+13. El médico puede ver el resumen clínico.
+
+14. El médico puede registrar la atención.
+
+15. Puede asignarse una cama.
+
+16. Puede liberarse una cama.
+
+17. El paciente puede ser dado de alta o trasladado.
+
+18. Puede solicitarse/generarse el informe.
+
+19. El dashboard refleja los cambios.
+
+20. La auditoría puede mostrar las acciones.
+
+==================================================
+48. EXPERIENCIA DE USUARIO
+==================================================
+
+MediFlow debe sentirse como un sistema hospitalario real.
+
+Evitar:
+
+- Formularios innecesariamente largos.
+- Información repetida.
+- Botones ambiguos.
+- Terminología inconsistente.
+- Pantallas sobrecargadas.
+- Confirmaciones innecesarias.
+- Animaciones excesivas.
+
+Priorizar:
+
+- Claridad.
+- Rapidez.
+- Visibilidad de prioridades.
+- Alertas.
+- Información clínica relevante.
+- Estados claros.
+- Acciones rápidas.
+
+Especialmente en emergencias.
+
+==================================================
+49. CORRECCIONES VISUALES
+==================================================
+
+Revisa específicamente las capturas/interfaz actual y corrige:
+
+- Espaciados inconsistentes.
+- Elementos desalineados.
+- Textos cortados.
+- Badges inconsistentes.
+- Iconos incorrectos.
+- Botones con tamaños diferentes sin motivo.
+- Tablas difíciles de leer.
+- Estados con colores incorrectos.
+- Problemas de scroll.
+- Elementos que desaparecen.
+- Sidebar.
+- Header.
+- Breadcrumbs.
+- Cards.
+- Modales.
+
+Mantener la identidad visual actual.
+
+==================================================
+50. RENDIMIENTO
+==================================================
+
+Evitar:
+
+- Peticiones duplicadas.
+- Renderizados innecesarios.
+- Datos repetidos.
+- Cargas completas cuando solo cambia una sección.
+
+No sobreoptimizar.
+
+Priorizar primero:
+
+FUNCIONALIDAD
+↓
+CONSISTENCIA
+↓
+ESTABILIDAD
+↓
+RENDIMIENTO
+
+==================================================
+51. CALIDAD DEL CÓDIGO
+==================================================
+
+Después de corregir la interfaz:
+
+- Eliminar imports sin usar.
+- Eliminar variables sin usar.
+- Eliminar código muerto.
+- Corregir errores TypeScript.
+- Corregir warnings relevantes.
+- Evitar componentes gigantes.
+- Reutilizar componentes cuando tenga sentido.
+- Separar UI de servicios.
+- Centralizar tipos.
+- Centralizar constantes.
+- Centralizar configuración.
+
+NO hacer una refactorización masiva solo por estética.
+
+Refactorizar donde mejore realmente la mantenibilidad.
+
+==================================================
+52. DOCUMENTACIÓN PARA LA FUTURA INTEGRACIÓN CON N8N
+==================================================
+
+Crear dentro del proyecto un documento:
+
+N8N_INTEGRATION.md
+
+Debe explicar:
+
+1. Cómo configurar N8N_BASE_URL.
+2. Qué servicios existen.
+3. Qué datos envía cada servicio.
+4. Qué respuesta espera cada servicio.
+5. Qué endpoints/webhooks deberán proporcionar n8n.
+6. Qué errores puede devolver n8n.
+7. Cómo activar modo mock.
+8. Cómo activar modo integración.
+9. Qué datos todavía son mock.
+10. Qué funcionalidades están pendientes de n8n.
+
+Ejemplo:
+
+createPatient
+INPUT:
+PatientCreateRequest
+
+OUTPUT:
+Patient
+
+triagePatient
+INPUT:
+TriageRequest
+
+OUTPUT:
+TriageResult
+
+getEmergencyQueue
+OUTPUT:
+EmergencyQueue
+
+getClinicalSummary
+INPUT:
+patientId / episodeId
+
+OUTPUT:
+ClinicalSummary
+
+assignBed
+INPUT:
+episodeId / bedId
+
+OUTPUT:
+BedAssignment
+
+dischargePatient
+INPUT:
+episodeId / dischargeData
+
+OUTPUT:
+DischargeResult
+
+generateReport
+INPUT:
+episodeId
+
+OUTPUT:
+ReportResult
+
+getDashboardSummary
+OUTPUT:
+DashboardSummary
+
+getAuditEvents
+OUTPUT:
+AuditEvent[]
+
+Estos son contratos conceptuales.
+
+No inventes respuestas que contradigan el proyecto actual.
+
+==================================================
+53. README
+==================================================
+
+Actualizar README.md para explicar:
+
+MediFlow AI
+Frontend
+
+Arquitectura:
+
+Replit Frontend
+       ↓
+Integration Layer
+       ↓
+n8n
+       ↓
+Automations / Business Processes
+
+Incluir:
+
+- Cómo ejecutar el frontend.
+- Cómo configurar variables de entorno.
+- Cómo usar modo mock.
+- Cómo cambiar a n8n.
+- Qué módulos están implementados.
+- Qué módulos son futuros.
+- Cómo probar el frontend sin n8n.
+
+==================================================
+54. VARIABLES DE ENTORNO
+==================================================
+
+Preparar variables de entorno apropiadas.
+
+Por ejemplo conceptualmente:
+
+VITE_N8N_BASE_URL=
+VITE_DATA_SOURCE=mock
+
+No colocar secretos.
+
+No incluir credenciales privadas.
+
+Crear un archivo de ejemplo:
+
+.env.example
+
+con variables vacías o valores de ejemplo no sensibles.
+
+==================================================
+55. DEFINICIÓN DE "TERMINADO"
+==================================================
+
+No consideres terminado el trabajo hasta comprobar:
+
+[ ] Todas las rutas funcionan.
+
+[ ] Sidebar funciona.
+
+[ ] Breadcrumbs funcionan.
+
+[ ] Botones principales funcionan.
+
+[ ] Buscar paciente funciona.
+
+[ ] Registrar paciente funciona en modo mock.
+
+[ ] Episodio funciona en modo mock.
+
+[ ] Triaje funciona en modo mock.
+
+[ ] La respuesta de triaje se representa correctamente.
+
+[ ] Cola funciona.
+
+[ ] Filtros funcionan.
+
+[ ] Reevaluación está preparada.
+
+[ ] Ficha clínica funciona.
+
+[ ] Resumen clínico funciona con mock.
+
+[ ] Atención médica funciona con mock.
+
+[ ] Camas funcionan con mock.
+
+[ ] Alta/traslado funciona con mock.
+
+[ ] Informe está preparado.
+
+[ ] Dashboard funciona.
+
+[ ] Alertas funcionan.
+
+[ ] Auditoría funciona.
+
+[ ] Laboratorio no rompe la aplicación.
+
+[ ] Farmacia no rompe la aplicación.
+
+[ ] Ambulancias no rompe la aplicación.
+
+[ ] Personal no rompe la aplicación.
+
+[ ] Registro por voz no finge una funcionalidad inexistente.
+
+[ ] No existen credenciales secretas en frontend.
+
+[ ] No existen llamadas HTTP dispersas por componentes.
+
+[ ] Existe una capa de integración.
+
+[ ] Existe modo MOCK.
+
+[ ] Existe configuración para N8N.
+
+[ ] Existe documentación N8N_INTEGRATION.md.
+
+[ ] Existe .env.example.
+
+[ ] No hay errores importantes en consola.
+
+[ ] No hay errores TypeScript/JavaScript.
+
+[ ] La aplicación mantiene el diseño actual.
+
+==================================================
+56. REGLA FINAL
+==================================================
+
+NO agregues funcionalidades simplemente para hacer el proyecto más grande.
+
+NO conviertas el frontend en el backend.
+
+NO dupliques la lógica que posteriormente pertenecerá a n8n.
+
+NO inventes integraciones hospitalarias reales.
+
+NO inventes HL7/FHIR.
+
+NO inventes IA médica.
+
+NO inventes diagnóstico automático.
+
+NO inventes datos reales.
+
+NO elimines el trabajo visual existente.
+
+El objetivo es:
+
+CONSERVAR Y MEJORAR EL FRONTEND ACTUAL
+
++
+
+HACER QUE SEA ESTABLE Y COHERENTE
+
++
+
+PREPARARLO PROFESIONALMENTE PARA N8N
+
++
+
+MANTENER EL MVP CENTRADO EN EL FLUJO DE EMERGENCIAS.
+
+Antes de finalizar, revisa nuevamente toda la aplicación después de realizar los cambios y corrige cualquier problema que hayas introducido.
+
+Al terminar, dame un resumen de:
+
+1. Problemas encontrados.
+2. Problemas corregidos.
+3. Páginas modificadas.
+4. Componentes creados/modificados.
+5. Servicios creados.
+6. Modelos/interfaces creados.
+7. Variables de entorno creadas.
+8. Endpoints/webhooks que el futuro proyecto n8n deberá proporcionar.
+9. Funciones que todavía utilizan mock.
+10. Funciones que ya están listas para conectarse con n8n.
+11. Funciones que pertenecen al roadmap y no al MVP.
+
+NO quiero solamente una explicación.
+
+QUIERO QUE MODIFIQUES EL PROYECTO ACTUAL Y DEJES EL FRONTEND REALMENTE PREPARADO PARA LA INTEGRACIÓN CON N8N.
