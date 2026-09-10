@@ -1,35 +1,44 @@
-export type PatientStatus = 'En atención' | 'En espera' | 'Observación' | 'Alta';
-export type Priority = 'P1' | 'P2' | 'P3' | 'P4';
+import type {
+  Alert,
+  Ambulance,
+  AreaCapacity,
+  AuditEvent,
+  AutomationWorkflow,
+  Bed,
+  ClinicalReport,
+  ClinicalSummary,
+  Episode,
+  LabOrder,
+  MedicationStock,
+  OperatingRoom,
+  Patient,
+  PatientStatus,
+  Priority,
+  StaffMember,
+  SystemStatus,
+  TriageResult,
+} from '@/domain/contracts';
 
-export type Patient = {
-  id: string;
-  record: string;
-  name: string;
-  age: number;
-  sex: 'F' | 'M';
-  blood: string;
-  allergies: string[];
-  chronic: string[];
-  medications: string[];
-  status: PatientStatus;
-  lastVisit: string;
-  phone: string;
-};
-
-export type Episode = {
-  id: string;
-  patientId: string;
-  reason: string;
-  vitals: { fc: number; pa: string; spo2: number; temp: number };
-  priority: Priority;
-  status: 'En espera' | 'En atención' | 'Observación' | 'Completado';
-  area: string;
-  doctor: string;
-  bed: string;
-  wait: string;
-  observations: string;
-  createdAt: string;
-};
+export type {
+  Alert,
+  Ambulance,
+  AreaCapacity,
+  AuditEvent,
+  AutomationWorkflow,
+  Bed,
+  ClinicalReport,
+  ClinicalSummary,
+  Episode,
+  LabOrder,
+  MedicationStock,
+  OperatingRoom,
+  Patient,
+  PatientStatus,
+  Priority,
+  StaffMember,
+  SystemStatus,
+  TriageResult,
+} from '@/domain/contracts';
 
 export const patients: Patient[] = [
   { id: 'pt-1048', record: 'MF-240184', name: 'Valentina Ríos', age: 42, sex: 'F', blood: 'O+', allergies: ['Penicilina'], chronic: ['Asma'], medications: ['Salbutamol inhalado'], status: 'En atención', lastVisit: 'Hoy, 08:42', phone: '55 2840 1192' },
@@ -50,39 +59,40 @@ export const episodes: Episode[] = [
   { id: 'ep-8835', patientId: 'pt-1073', reason: 'Exacerbación de EPOC', vitals: { fc: 106, pa: '139/84', spo2: 89, temp: 37.2 }, priority: 'P2', status: 'Observación', area: 'Emergencias · Cubículo 07', doctor: 'Dra. Elisa Montero', bed: 'E-07', wait: '—', observations: 'Oxígeno a 2 L/min. Revalorar saturación en 15 min.', createdAt: '06:22' },
 ];
 
-export const beds = [
-  { id: 'E-01', area: 'Emergencias', type: 'Monitorizada', status: 'Ocupada', patient: 'Rafael Ibarra', since: '07:54', acuity: 'P1' },
+export const beds: Bed[] = [
+  { id: 'E-01', area: 'Emergencias', type: 'Monitorizada', status: 'Libre', patient: '—', since: '—', acuity: '—' },
   { id: 'E-02', area: 'Emergencias', type: 'Monitorizada', status: 'Libre', patient: '—', since: '—', acuity: '—' },
-  { id: 'E-03', area: 'Emergencias', type: 'Monitorizada', status: 'Ocupada', patient: 'Valentina Ríos', since: '08:48', acuity: 'P1' },
+  { id: 'E-03', area: 'Emergencias', type: 'Monitorizada', status: 'Ocupada', patient: 'Valentina Ríos', patientId: 'pt-1048', since: '08:48', acuity: 'P1' },
   { id: 'E-04', area: 'Emergencias', type: 'Monitorizada', status: 'Limpieza', patient: '—', since: '09:12', acuity: '—' },
-  { id: 'T-01', area: 'Trauma', type: 'Crítica', status: 'Ocupada', patient: 'Mateo Salgado', since: '08:01', acuity: 'P1' },
+  { id: 'E-07', area: 'Emergencias', type: 'Monitorizada', status: 'Ocupada', patient: 'Sofía Navarro', patientId: 'pt-1073', since: '06:22', acuity: 'P2' },
+  { id: 'T-01', area: 'Trauma', type: 'Crítica', status: 'Ocupada', patient: 'Rafael Ibarra', patientId: 'pt-1070', since: '07:54', acuity: 'P1' },
   { id: 'T-02', area: 'Trauma', type: 'Crítica', status: 'Libre', patient: '—', since: '—', acuity: '—' },
-  { id: 'H-12', area: 'Hospitalización', type: 'Estándar', status: 'Ocupada', patient: 'Sofía Navarro', since: '06:44', acuity: 'P2' },
-  { id: 'H-13', area: 'Hospitalización', type: 'Estándar', status: 'Reservada', patient: 'Jorge Mendoza', since: '—', acuity: 'P2' },
+  { id: 'H-12', area: 'Hospitalización', type: 'Estándar', status: 'Ocupada', patient: 'Paciente reservado', since: '06:44', acuity: 'P2' },
+  { id: 'H-13', area: 'Hospitalización', type: 'Estándar', status: 'Reservada', patient: 'Jorge Mendoza', patientId: 'pt-1051', since: '—', acuity: 'P2' },
   { id: 'UCI-04', area: 'UCI', type: 'Ventilada', status: 'Ocupada', patient: 'Paciente reservado', since: 'Ayer', acuity: 'P1' },
 ];
 
-export const areas = [
+export const areas: AreaCapacity[] = [
   { name: 'Emergencias', used: 8, total: 12, note: '2 monitorizadas libres', color: 'teal' },
   { name: 'Hospitalización', used: 31, total: 40, note: '7 camas disponibles', color: 'navy' },
   { name: 'UCI', used: 7, total: 8, note: '1 cama crítica libre', color: 'amber' },
   { name: 'Pediatría', used: 9, total: 14, note: '5 camas disponibles', color: 'blue' },
 ];
 
-export const operatingRooms = [
+export const operatingRooms: OperatingRoom[] = [
   { id: 'QX-01', procedure: 'Colecistectomía laparoscópica', doctor: 'Dr. Bruno Leal', time: '10:30', status: 'Preparación' },
   { id: 'QX-02', procedure: '—', doctor: '—', time: '—', status: 'Disponible' },
   { id: 'QX-03', procedure: 'Artroplastia de rodilla', doctor: 'Dra. Teresa Valle', time: '13:00', status: 'Programado' },
 ];
 
-export const ambulances = [
+export const ambulances: Ambulance[] = [
   { id: 'AMB-07', plate: 'MX-47-AC', crew: 'S. Zamora · L. Vera', status: 'En base', location: 'Base Norte', eta: '—' },
   { id: 'AMB-12', plate: 'MX-12-KL', crew: 'M. Salas · N. Gil', status: 'En ruta', location: 'Av. Reforma 224', eta: '08 min' },
   { id: 'AMB-04', plate: 'MX-04-RP', crew: 'A. Pardo · C. Soto', status: 'En traslado', location: 'Hospital Central', eta: 'Arribo 11 min' },
   { id: 'AMB-19', plate: 'MX-19-FQ', crew: 'J. Cano · E. Ruiz', status: 'Mantenimiento', location: 'Taller', eta: '—' },
 ];
 
-export const staff = [
+export const staff: StaffMember[] = [
   { id: 'st-01', name: 'Elisa Montero', role: 'Urgencias', initials: 'EM', shift: '07:00 — 15:00', status: 'En turno', patients: 4 },
   { id: 'st-02', name: 'Andrés Cota', role: 'Trauma', initials: 'AC', shift: '07:00 — 19:00', status: 'En turno', patients: 3 },
   { id: 'st-03', name: 'Iván Prieto', role: 'Cirugía', initials: 'IP', shift: '09:00 — 17:00', status: 'En turno', patients: 2 },
@@ -91,7 +101,7 @@ export const staff = [
   { id: 'st-06', name: 'Bruno Leal', role: 'Cirugía general', initials: 'BL', shift: '10:00 — 18:00', status: 'Próximo turno', patients: 0 },
 ];
 
-export const labs = [
+export const labs: LabOrder[] = [
   { id: 'LAB-7782', patient: 'Jorge Mendoza', record: 'MF-240207', study: 'Biometría hemática + Troponina', requested: '09:22', status: 'En proceso', result: '—', urgency: 'Urgente' },
   { id: 'LAB-7776', patient: 'Valentina Ríos', record: 'MF-240184', study: 'Gasometría arterial', requested: '08:56', status: 'Listo', result: 'Ver resultado', urgency: 'Urgente' },
   { id: 'LAB-7771', patient: 'Camila Torres', record: 'MF-240219', study: 'Perfil de coagulación', requested: '23:18', status: 'Listo', result: 'Ver resultado', urgency: 'Rutina' },
@@ -99,7 +109,7 @@ export const labs = [
   { id: 'LAB-7750', patient: 'Ana Lucía Peña', record: 'MF-240241', study: 'Química sanguínea', requested: '12 jun, 14:10', status: 'Validado', result: 'Ver resultado', urgency: 'Rutina' },
 ];
 
-export const pharmacy = [
+export const pharmacy: MedicationStock[] = [
   { id: 'med-01', name: 'Salbutamol 100 mcg / dosis', presentation: 'Inhalador · 200 dosis', stock: 18, minimum: 10, location: 'Estante A-03', status: 'Disponible' },
   { id: 'med-02', name: 'Ceftriaxona 1 g', presentation: 'Frasco ámpula', stock: 7, minimum: 12, location: 'Refrigerador B-01', status: 'Reabastecer' },
   { id: 'med-03', name: 'Metformina 850 mg', presentation: 'Caja · 30 tabletas', stock: 46, minimum: 20, location: 'Estante C-02', status: 'Disponible' },
@@ -107,14 +117,14 @@ export const pharmacy = [
   { id: 'med-05', name: 'Paracetamol 1 g IV', presentation: 'Bolsa · 100 ml', stock: 32, minimum: 15, location: 'Estante A-11', status: 'Disponible' },
 ];
 
-export const workflows = [
+export const workflows: AutomationWorkflow[] = [
   { id: 'wf-01', name: 'Ingreso de paciente → Triaje', source: 'Registro recepción', target: 'Cola de triaje', status: 'Activo', runs: 148, last: 'Hace 2 min' },
   { id: 'wf-02', name: 'Resultado laboratorio → Expediente', source: 'Sistema LIS', target: 'Historial clínico', status: 'Activo', runs: 87, last: 'Hace 6 min' },
   { id: 'wf-03', name: 'Cama liberada → Alertar recepción', source: 'Gestor de camas', target: 'Canal operaciones', status: 'Activo', runs: 32, last: 'Hace 18 min' },
   { id: 'wf-04', name: 'Alta → Resumen de atención', source: 'Módulo médico', target: 'Expediente + correo', status: 'Pausado', runs: 19, last: 'Ayer, 17:42' },
 ];
 
-export const auditEvents = [
+export const auditEvents: AuditEvent[] = [
   { id: 'AU-9218', time: '09:42:18', actor: 'Sistema n8n', action: 'Prioridad recibida', detail: 'EP-8830 · Mateo Salgado · P2', kind: 'Integración' },
   { id: 'AU-9217', time: '09:40:05', actor: 'Mariana Solís', action: 'Cama asignada', detail: 'H-13 → Jorge Mendoza', kind: 'Operación' },
   { id: 'AU-9216', time: '09:36:44', actor: 'Recepción 02', action: 'Paciente registrado', detail: 'Mateo Salgado · MF-240234', kind: 'Acceso' },
@@ -123,8 +133,54 @@ export const auditEvents = [
   { id: 'AU-9213', time: '09:21:32', actor: 'Sistema n8n', action: 'Webhook procesado', detail: 'Resultado LIS #7781', kind: 'Integración' },
 ];
 
-export const alerts = [
-  { id: 'al-01', tone: 'critical', title: 'Saturación crítica', detail: 'Sofía Navarro · Cubículo E-07', time: 'Hace 4 min' },
-  { id: 'al-02', tone: 'warning', title: 'Stock bajo', detail: 'Ceftriaxona 1 g · 7 unidades', time: 'Hace 12 min' },
-  { id: 'al-03', tone: 'info', title: 'Ambulancia en ruta', detail: 'AMB-12 · Arribo estimado 8 min', time: 'Hace 16 min' },
+export const alerts: Alert[] = [
+  { id: 'al-01', severity: 'critical', tone: 'critical', title: 'Saturación crítica', detail: 'Sofía Navarro · Cubículo E-07', time: 'Hace 4 min', patientId: 'pt-1073', episodeId: 'ep-8835' },
+  { id: 'al-02', severity: 'warning', tone: 'warning', title: 'Stock bajo', detail: 'Ceftriaxona 1 g · 7 unidades', time: 'Hace 12 min' },
+  { id: 'al-03', severity: 'info', tone: 'info', title: 'Ambulancia en ruta', detail: 'AMB-12 · Arribo estimado 8 min', time: 'Hace 16 min' },
+];
+
+export const triageResults: TriageResult[] = episodes.slice(1, 4).map((episode) => ({
+  id: `TR-${episode.id.slice(-4)}`,
+  episodeId: episode.id,
+  patientId: episode.patientId,
+  priority: episode.priority,
+  status: 'Recibido',
+  source: 'n8n / webhook triage-v2',
+  receivedAt: `${episode.createdAt}:00`,
+}));
+
+export const clinicalSummaries: ClinicalSummary[] = patients.map((patient) => ({
+  patientId: patient.id,
+  episodeId: episodes.find((episode) => episode.patientId === patient.id)?.id,
+  diagnoses: [],
+  allergies: patient.allergies,
+  chronicConditions: patient.chronic,
+  medications: patient.medications,
+  notes: [],
+  lastUpdatedAt: patient.lastVisit,
+}));
+
+export const clinicalReports: ClinicalReport[] = [
+  { id: 'REP-001', patientId: 'pt-1048', episodeId: 'ep-8821', type: 'Resumen de atención', status: 'Borrador', issuedAt: 'Hoy, 09:42', summary: 'Crisis asmática probable; atención en curso.' },
+  { id: 'REP-002', patientId: 'pt-1066', type: 'Alta', status: 'Validado', issuedAt: '12 jun, 16:20', summary: 'Alta ambulatoria sin incidencias.' },
+];
+
+export const dashboardSummary: import('@/domain/contracts').DashboardSummary = {
+  patientsToday: 47,
+  patientsTodayDelta: 8,
+  emergencyCount: 6,
+  criticalEmergencyCount: 2,
+  averageWaitMinutes: 18,
+  averageWaitDeltaMinutes: -4,
+  freeBeds: 13,
+  totalBeds: 74,
+  openAlerts: 3,
+  lastSynchronizedAt: '42 segundos',
+};
+
+export const systemServices: SystemStatus[] = [
+  { name: 'Core clínico', status: 'Operativo', detail: 'Sincronización nominal', latency: '42 ms' },
+  { name: 'n8n · integraciones', status: 'Operativo', detail: '4 workflows activos', latency: '118 ms' },
+  { name: 'LIS · laboratorio', status: 'Latencia', detail: 'Demora en validación', latency: '860 ms' },
+  { name: 'Inventario farmacia', status: 'Operativo', detail: 'Última actualización 09:41', latency: '64 ms' },
 ];

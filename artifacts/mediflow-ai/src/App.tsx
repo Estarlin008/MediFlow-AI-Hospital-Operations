@@ -15,7 +15,8 @@ import {
   alerts, ambulances, areas, auditEvents, beds, episodes, labs, operatingRooms, patients as seedPatients,
   pharmacy, staff, workflows, type Episode, type Patient, type Priority
 } from '@/data/mock-data';
-import { receiveExternalTriage, registerPatient, runWorkflow, systemServices } from '@/services/mock-hospital';
+import { PRIORITY_VISUAL_CLASSES, STATUS_VISUAL_CLASSES } from '@/domain/contracts';
+import { receiveExternalTriage, registerPatient, runWorkflow, systemServices } from '@/services/hospital';
 import NotFound from '@/pages/not-found';
 import '@/index.css';
 
@@ -51,8 +52,8 @@ function SirenIcon({ size = 18, className }: { size?: number; className?: string
 }
 
 const cx = (...classes: (string | false | null | undefined)[]) => classes.filter(Boolean).join(' ');
-const priorityClass = (p: Priority) => ({ P1: 'bg-[#fbe3e1] text-[#a92e29]', P2: 'bg-[#fff1d8] text-[#a56510]', P3: 'bg-[#def1ef] text-[#0c7770]', P4: 'bg-[#e8eef4] text-[#577083]' }[p]);
-const statusClass = (s: string) => s === 'Operativo' || s === 'Disponible' || s === 'Listo' || s === 'En turno' || s === 'Validado' ? 'text-[#187f72] bg-[#e0f2ee]' : s === 'Crítico' || s === 'Revisar' ? 'text-[#a92e29] bg-[#fbe3e1]' : 'text-[#a56510] bg-[#fff1d8]';
+const priorityClass = (p: Priority) => PRIORITY_VISUAL_CLASSES[p];
+const statusClass = (s: string) => STATUS_VISUAL_CLASSES[s] ?? 'text-[#a56510] bg-[#fff1d8]';
 
 function Badge({ children, className = '' }: { children: ReactNode; className?: string }) {
   return <span className={cx('inline-flex items-center rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-[.08em]', className)}>{children}</span>;

@@ -1,44 +1,48 @@
-# [Project name]
+# MediFlow AI
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Interfaz de operación hospitalaria con datos demo y una frontera preparada para integración n8n.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/mediflow-ai run dev` — run the web artifact
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- `pnpm --filter @workspace/api-server run dev` — run the existing API artifact when needed
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- React + Vite + Tailwind CSS
+- Validation: Zod
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/mediflow-ai/src/domain/contracts.ts` — contratos, catálogos y schemas de dominio.
+- `artifacts/mediflow-ai/src/data/mock-data.ts` — fixtures demo normalizados.
+- `artifacts/mediflow-ai/src/services/hospital.ts` — selección de adaptador por modo.
+- `artifacts/mediflow-ai/src/integration/` — configuración pública y cliente HTTP n8n.
+- `N8N_INTEGRATION.md` — rutas, payloads, errores y límites del MVP.
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- El modo `mock` es el valor predeterminado y no requiere URL, backend ni credenciales.
+- El transporte n8n está aislado en un único cliente con timeout y validación Zod.
+- Las prioridades y reglas clínicas llegan como resultado externo; el frontend no las calcula.
+- Las variables `VITE_*` son públicas y nunca deben contener secretos.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+Monitoreo operativo, pacientes, emergencias, triaje externo, recursos, automatizaciones y auditoría en una interfaz demo.
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+Sin preferencias persistentes registradas.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Para trabajar sin red usa `VITE_DATA_SOURCE=mock`.
+- Para activar n8n define también `VITE_N8N_BASE_URL`; las rutas se sobreescriben con `VITE_N8N_ROUTES_JSON`.
+- No agregar credenciales a variables `VITE_*`, porque quedan expuestas en el navegador.
 
 ## Pointers
 
