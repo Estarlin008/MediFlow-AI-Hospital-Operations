@@ -1,207 +1,266 @@
-import { type ComponentType, type ReactNode, useMemo, useState } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ErrorBoundary } from '@/components/error-boundary';
-import { Toaster } from '@/components/ui/toaster';
-import { TooltipProvider } from '@/components/ui/tooltip';
-import { Link, Route, Switch, useLocation, useRoute, Router as WouterRouter } from 'wouter';
+import { lazy, Suspense, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { Link, Route, Switch, useLocation } from 'wouter';
 import {
-  Activity, AlertTriangle, Ambulance, ArrowDownToLine, ArrowRight, BedDouble, Bell, Boxes, BrainCircuit,
-  Check, ChevronDown, ChevronRight, ClipboardCheck, Clock3, Cpu, FileClock, FileHeart, FlaskConical,
-  Gauge, HeartPulse, LayoutDashboard, LifeBuoy, ListFilter, LoaderCircle, LockKeyhole, Menu, Mic, MoreHorizontal,
-  PackageSearch, PanelLeftClose, Pill, Plus, RefreshCw, Search, Send, Settings, ShieldCheck, SlidersHorizontal,
-  Stethoscope, Syringe, UserPlus, Users, UserRound, Workflow, X, Zap
+  Activity,
+  BedDouble,
+  ChevronDown,
+  CircleHelp,
+  ClipboardList,
+  Clock3,
+  HeartPulse,
+  Home,
+  Search,
+  Stethoscope,
+  UserRoundPlus,
+  UsersRound,
+  X,
 } from 'lucide-react';
-import {
-  alerts, ambulances, areas, auditEvents, beds, episodes, labs, operatingRooms, patients as seedPatients,
-  pharmacy, staff, workflows, type Episode, type Patient, type Priority
-} from '@/data/mock-data';
-import { PRIORITY_VISUAL_CLASSES, STATUS_VISUAL_CLASSES } from '@/domain/contracts';
-import { receiveExternalTriage, registerPatient, runWorkflow, systemServices } from '@/services/hospital';
-import NotFound from '@/pages/not-found';
-import '@/index.css';
+import { MvpStoreProvider, useMvpStore } from '@/mvp/state';
 
-const queryClient = new QueryClient();
+const DashboardPage = lazy(() => import('@/mvp/dashboard-page').then((module) => ({ default: module.DashboardPage })));
+const RegistrationPage = lazy(() => import('@/mvp/registration-page').then((module) => ({ default: module.RegistrationPage })));
+const QueuePage = lazy(() => import('@/mvp/queue-page').then((module) => ({ default: module.QueuePage })));
+const ReevaluationPage = lazy(() => import('@/mvp/reevaluation-page').then((module) => ({ default: module.ReevaluationPage })));
+const ResourcesPage = lazy(() => import('@/mvp/resources-page').then((module) => ({ default: module.ResourcesPage })));
 
-type Icon = ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
-type Toast = { message: string; tone?: 'success' | 'info' | 'warning' };
-
-const navGroups: { label: string; items: { href: string; label: string; icon: Icon; count?: string }[] }[] = [
-  { label: 'Centro de control', items: [
-    { href: '/', label: 'Resumen operativo', icon: LayoutDashboard },
-    { href: '/emergencias', label: 'Emergencias', icon: SirenIcon, count: '06' },
-    { href: '/pacientes', label: 'Pacientes', icon: Users },
-    { href: '/triaje', label: 'Triaje', icon: Activity, count: '03' },
-  ] },
-  { label: 'Operación clínica', items: [
-    { href: '/historial-clinico', label: 'Historial clínico', icon: FileHeart },
-    { href: '/recursos', label: 'Recursos', icon: BedDouble },
-    { href: '/laboratorio', label: 'Laboratorio', icon: FlaskConical },
-    { href: '/farmacia', label: 'Farmacia', icon: Pill },
-    { href: '/ambulancias', label: 'Ambulancias', icon: Ambulance },
-    { href: '/personal', label: 'Personal', icon: Stethoscope },
-  ] },
-  { label: 'Sistema', items: [
-    { href: '/automatizaciones', label: 'Automatizaciones', icon: Workflow },
-    { href: '/auditoria', label: 'Auditoría', icon: FileClock },
-    { href: '/configuracion', label: 'Configuración', icon: Settings },
-  ] },
+const navItems = [
+  { href: '/', label: 'Panel de control', icon: Home },
+  { href: '/registro', label: 'Registro de pacientes', icon: UserRoundPlus },
+  { href: '/cola', label: 'Cola de atención', icon: ClipboardList },
+  { href: '/reevaluacion', label: 'Reevaluación', icon: Stethoscope },
+  { href: '/recursos', label: 'Gestión de recursos', icon: BedDouble },
 ];
 
-function SirenIcon({ size = 18, className }: { size?: number; className?: string }) {
-  return <span className={className}><AlertTriangle size={size} strokeWidth={1.8} /></span>;
-}
-
-const cx = (...classes: (string | false | null | undefined)[]) => classes.filter(Boolean).join(' ');
-const priorityClass = (p: Priority) => PRIORITY_VISUAL_CLASSES[p];
-const statusClass = (s: string) => STATUS_VISUAL_CLASSES[s] ?? 'text-[#a56510] bg-[#fff1d8]';
-
-function Badge({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <span className={cx('inline-flex items-center rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-[.08em]', className)}>{children}</span>;
-}
-
-function Metric({ label, value, detail, icon: MetricIcon, accent = 'teal' }: { label: string; value: string; detail: string; icon: Icon; accent?: 'teal' | 'red' | 'amber' | 'navy' }) {
-  const colors = { teal: 'bg-[#e0f2ee] text-[#14796f]', red: 'bg-[#fbe3e1] text-[#a92e29]', amber: 'bg-[#fff1d8] text-[#a56510]', navy: 'bg-[#e7edf4] text-[#284b68]' };
-  return <div className="mf-card p-4">
-    <div className="flex items-start justify-between"><span className="text-[11px] font-semibold uppercase tracking-[.11em] text-muted-foreground">{label}</span><span className={cx('rounded-lg p-2', colors[accent])}><MetricIcon size={17} /></span></div>
-    <div className="mt-3 flex items-end gap-2"><strong className="font-mono-ui text-[28px] leading-none tracking-[-.06em] text-foreground">{value}</strong><span className="mb-0.5 text-[11px] text-muted-foreground">{detail}</span></div>
-  </div>;
-}
-
-function PageHeader({ eyebrow, title, description, actions }: { eyebrow: string; title: string; description: string; actions?: ReactNode }) {
-  return <div className="mb-6 flex flex-col justify-between gap-4 border-b border-border pb-5 sm:flex-row sm:items-end">
-    <div><div className="font-mono-ui text-[10px] uppercase tracking-[.18em] text-accent">{eyebrow}</div><h1 className="mt-1 text-[25px] font-extrabold tracking-[-.04em] text-foreground">{title}</h1><p className="mt-1 max-w-2xl text-sm text-muted-foreground">{description}</p></div>
-    {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
-  </div>;
-}
-
-function Button({ children, onClick, variant = 'primary', icon: ButtonIcon, disabled = false, testId = 'button-action', type = 'button' }: { children: ReactNode; onClick?: () => void; variant?: 'primary' | 'outline' | 'quiet' | 'danger'; icon?: Icon; disabled?: boolean; testId?: string; type?: 'button' | 'submit' }) {
-  const styles = { primary: 'bg-primary text-primary-foreground hover:bg-[#1e4869]', outline: 'border border-border bg-card text-foreground hover:border-accent hover:text-accent', quiet: 'bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground', danger: 'border border-[#efc7c4] bg-[#fff5f4] text-[#a92e29] hover:bg-[#fbe3e1]' };
-  return <button data-testid={testId} type={type} disabled={disabled} onClick={onClick} className={cx('mf-button inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-50', styles[variant])}>{ButtonIcon && <ButtonIcon size={15} />}{children}</button>;
-}
-
-function Modal({ title, eyebrow, children, onClose }: { title: string; eyebrow: string; children: ReactNode; onClose: () => void }) {
-  return <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0e2c3a]/35 p-4 backdrop-blur-[2px]">
-    <div className="mf-card mf-fade max-h-[92dvh] w-full max-w-lg overflow-y-auto bg-card shadow-2xl">
-      <div className="flex items-start justify-between border-b border-border px-5 py-4"><div><div className="font-mono-ui text-[10px] uppercase tracking-[.15em] text-accent">{eyebrow}</div><h2 className="mt-1 text-lg font-extrabold tracking-[-.03em]">{title}</h2></div><button data-testid="button-close-modal" onClick={onClose} className="rounded-md p-1.5 text-muted-foreground hover:bg-muted"><X size={18} /></button></div>
-      <div className="p-5">{children}</div>
-    </div>
-  </div>;
-}
-
-function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
-  const [location] = useLocation();
-  return <aside className={cx('mf-sidebar fixed inset-y-0 left-0 z-30 flex w-[248px] flex-col border-r border-sidebar-border transition-[width] duration-200', collapsed && 'w-[76px]')}>
-    <div className="flex h-[76px] items-center gap-3 border-b border-sidebar-border px-5">
-      <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent text-white"><HeartPulse size={21} /><span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-[#f2b862]" /></div>
-      <div className="mf-brand-copy min-w-0"><div className="text-[15px] font-extrabold tracking-[-.04em] text-white">MediFlow <span className="font-mono-ui text-accent">AI</span></div><div className="font-mono-ui text-[9px] uppercase tracking-[.16em] text-sidebar-foreground/60">Hospital Central</div></div>
-    </div>
-    <div className="flex-1 overflow-y-auto px-3 py-5">
-      {navGroups.map((group) => <div key={group.label} className="mb-5"><div className="mf-sidebar-label mb-2 px-3 font-mono-ui text-[9px] uppercase tracking-[.16em] text-sidebar-foreground/45">{group.label}</div>{group.items.map((item) => { const active = location === item.href; const ItemIcon = item.icon; return <Link key={item.href} href={item.href} data-testid={`link-nav-${item.label.toLowerCase().replaceAll(' ', '-')}`} className={cx('group mb-0.5 flex items-center gap-3 rounded-lg px-3 py-2.5 text-[12px] font-semibold transition-colors', active ? 'bg-sidebar-accent text-white' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/70 hover:text-white')}><ItemIcon size={17} strokeWidth={active ? 2.3 : 1.8} /><span className="mf-sidebar-label flex-1">{item.label}</span>{item.count && <span className="mf-sidebar-label rounded bg-accent/20 px-1.5 py-0.5 font-mono-ui text-[9px] text-[#8ce2d8]">{item.count}</span>}{active && <span className="mf-sidebar-label h-1.5 w-1.5 rounded-full bg-accent" />}</Link>; })}</div>)}
-    </div>
-    <div className="border-t border-sidebar-border p-3">
-      <div className={cx('mb-2 flex items-center gap-3 rounded-lg bg-sidebar-accent/60 p-3', collapsed && 'justify-center p-2')}><div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#e4b368] text-xs font-extrabold text-[#28445b]">MS</div><div className="mf-sidebar-label min-w-0"><div className="truncate text-xs font-bold text-white">Mariana Solís</div><div className="truncate text-[10px] text-sidebar-foreground/55">Enfermería jefe</div></div></div>
-      <button data-testid="button-collapse-sidebar" onClick={onToggle} className="mf-sidebar-label flex w-full items-center gap-2 rounded-md px-3 py-2 text-[11px] text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-white">{collapsed ? <PanelLeftClose size={15} /> : <PanelLeftClose size={15} />} <span>{collapsed ? 'Expandir menú' : 'Contraer menú'}</span></button>
-    </div>
-  </aside>;
-}
-
-function Topbar({ onRegister, onVoice, onToast }: { onRegister: () => void; onVoice: () => void; onToast: (toast: Toast) => void }) {
-  const [query, setQuery] = useState('');
+function MvpApplication() {
   const [location, setLocation] = useLocation();
-  return <header className="sticky top-0 z-20 flex h-[76px] items-center justify-between gap-3 border-b border-border bg-background/95 px-5 backdrop-blur sm:px-8">
-    <div className="flex min-w-0 items-center gap-3"><div className="hidden items-center gap-2 text-xs text-muted-foreground sm:flex"><span>Operaciones</span><ChevronRight size={14} /><span className="font-semibold text-foreground">{location === '/' ? 'Resumen operativo' : location.slice(1).replaceAll('-', ' ')}</span></div><div className="relative w-[190px] sm:w-[260px]"><Search className="absolute left-3 top-2.5 text-muted-foreground" size={15} /><input data-testid="input-global-search" value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && query) setLocation('/pacientes'); }} placeholder="Buscar paciente, expediente..." className="h-9 w-full rounded-lg border border-border bg-card pl-9 pr-3 text-xs outline-none placeholder:text-muted-foreground/70 focus:border-accent focus:ring-2 focus:ring-accent/15" /></div></div>
-    <div className="flex shrink-0 items-center gap-2"><button data-testid="button-notifications" onClick={() => onToast({ message: '3 alertas operativas requieren revisión', tone: 'warning' })} className="relative rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground"><Bell size={18} /><span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-[#d6554b]" /></button><Button testId="button-voice-demo" variant="outline" icon={Mic} onClick={onVoice}><span className="hidden sm:inline">Registro por voz</span></Button><Button testId="button-register-patient" icon={UserPlus} onClick={onRegister}><span className="hidden sm:inline">Nuevo paciente</span><span className="sm:hidden">Nuevo</span></Button><div className="ml-1 hidden h-8 w-8 items-center justify-center rounded-full bg-[#dcebe8] text-[10px] font-extrabold text-[#14796f] md:flex">MS</div></div>
-  </header>;
-}
+  const { state, demoMode } = useMvpStore();
+  const [query, setQuery] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const pathname = location.split('?')[0];
 
-function Dashboard({ onRegister, onVoice, onToast, onPatient }: { onRegister: () => void; onVoice: () => void; onToast: (t: Toast) => void; onPatient: (p: Patient) => void }) {
-  return <div className="mf-fade">
-    <PageHeader eyebrow="Turno matutino · 14 JUN 2024 · 09:44" title="Buenos días, Mariana." description="Aquí está el pulso operativo del Hospital Central. Última sincronización hace 42 segundos." actions={<><Button variant="outline" icon={RefreshCw} onClick={() => onToast({ message: 'Módulos sincronizados correctamente', tone: 'success' })} testId="button-refresh-dashboard">Sincronizar</Button><Button icon={UserPlus} onClick={onRegister} testId="button-dashboard-register">Registrar paciente</Button></>} />
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4"><Metric label="Pacientes hoy" value="47" detail="+8 vs. ayer" icon={Users} accent="navy" /><Metric label="En emergencia" value="06" detail="2 críticos" icon={HeartPulse} accent="red" /><Metric label="Espera promedio" value="18m" detail="-4m esta hora" icon={Clock3} accent="amber" /><Metric label="Camas libres" value="13" detail="de 74 totales" icon={BedDouble} accent="teal" /></div>
-    <div className="mt-5 grid gap-5 xl:grid-cols-[1.35fr_.75fr]">
-      <section className="mf-card overflow-hidden"><div className="flex items-center justify-between border-b border-border px-5 py-4"><div><h2 className="text-sm font-extrabold">Cola de atención prioritaria</h2><p className="mt-0.5 text-[11px] text-muted-foreground">Orden de llegada · prioridad recibida por integración externa</p></div><Link href="/emergencias" data-testid="link-see-emergencies" className="flex items-center gap-1 text-[11px] font-bold text-accent hover:underline">Ver emergencias <ArrowRight size={13} /></Link></div><div className="divide-y divide-border">{episodes.slice(0, 4).map((episode) => <EpisodeRow key={episode.id} episode={episode} onPatient={onPatient} />)}</div></section>
-      <section className="mf-card"><div className="flex items-center justify-between border-b border-border px-5 py-4"><div><h2 className="text-sm font-extrabold">Alertas operativas</h2><p className="mt-0.5 text-[11px] text-muted-foreground">Requieren atención del turno</p></div><Badge className="bg-[#fbe3e1] text-[#a92e29]">03 abiertas</Badge></div><div className="space-y-1 p-3">{alerts.map((alert) => <button key={alert.id} data-testid={`button-alert-${alert.id}`} onClick={() => onToast({ message: `Alerta revisada: ${alert.title}`, tone: 'info' })} className="flex w-full items-start gap-3 rounded-lg p-3 text-left hover:bg-muted"><span className={cx('mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg', alert.tone === 'critical' ? 'bg-[#fbe3e1] text-[#a92e29]' : alert.tone === 'warning' ? 'bg-[#fff1d8] text-[#a56510]' : 'bg-[#e0f2ee] text-[#14796f]')}>{alert.tone === 'critical' ? <AlertTriangle size={14} /> : alert.tone === 'warning' ? <PackageSearch size={14} /> : <Ambulance size={14} />}</span><span className="min-w-0 flex-1"><span className="block text-xs font-bold">{alert.title}</span><span className="mt-0.5 block truncate text-[11px] text-muted-foreground">{alert.detail}</span></span><span className="font-mono-ui text-[9px] text-muted-foreground">{alert.time}</span></button>)}</div></section>
+  useEffect(() => {
+    setSearchOpen(false);
+    setQuery('');
+  }, [location]);
+
+  const matches = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    if (needle.length < 2) return [];
+    return state.patients
+      .filter((patient) =>
+        patient.name.toLowerCase().includes(needle) ||
+        patient.record.toLowerCase().includes(needle) ||
+        patient.id.toLowerCase().includes(needle) ||
+        (patient.identityNumber ?? '').toLowerCase().includes(needle),
+      )
+      .slice(0, 5);
+  }, [query, state.patients]);
+
+  function searchSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const patient = matches[0];
+    if (!patient) return;
+    const hasActiveEpisode = state.episodes.some(
+      (episode) => episode.patientId === patient.id && episode.status !== 'Atendido',
+    );
+    setLocation(hasActiveEpisode ? `/cola?patient=${encodeURIComponent(patient.id)}` : '/registro');
+    setSearchOpen(false);
+  }
+
+  const pageName = navItems.find((item) => item.href === pathname)?.label ?? 'MediFlow';
+  const dataStatus = demoMode
+    ? { label: 'MODO DEMO', shortLabel: 'DEMO', detail: 'Datos ficticios, solo sesión', tone: 'demo' }
+    : state.loading
+      ? { label: 'CARGANDO API', shortLabel: 'API…', detail: 'Consultando la integración', tone: 'loading' }
+      : state.loadErrors.length
+        ? { label: 'API CON ERRORES', shortLabel: 'API', detail: 'Algunos datos no cargaron', tone: 'error' }
+        : { label: 'API CONSULTADA', shortLabel: 'n8n', detail: 'Lecturas disponibles', tone: 'live' };
+  const currentDate = new Intl.DateTimeFormat('es-BO', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  }).format(new Date());
+
+  return (
+    <div className="mf-app-shell" lang="es-BO">
+      <a className="mf-skip-link" href="#main-content">Saltar al contenido principal</a>
+      <aside className="mf-app-sidebar" aria-label="Navegación principal">
+        <Link href="/" className="mf-brand">
+          <span className="mf-brand-mark"><HeartPulse size={20} strokeWidth={2.25} /></span>
+          <span className="min-w-0">
+            <span className="block text-[16px] font-extrabold tracking-[-0.04em]">MediFlow</span>
+            <span className="mt-0.5 block text-[9px] font-bold uppercase tracking-[0.15em] text-white/55">Emergencias</span>
+          </span>
+        </Link>
+        <div className="mf-side-caption">OPERACIÓN</div>
+        <nav className="mf-side-nav">
+          {navItems.map(({ href, label, icon: Icon }) => {
+            const active = href === '/' ? pathname === '/' : pathname === href || (href === '/cola' && pathname === '/emergencias') || (href === '/registro' && pathname === '/pacientes');
+            return (
+              <Link key={href} href={href} className={`mf-side-link ${active ? 'mf-side-link-active' : ''}`} aria-label={label} title={label} aria-current={active ? 'page' : undefined}>
+                <Icon size={17} strokeWidth={active ? 2.3 : 1.8} aria-hidden="true" />
+                <span>{label}</span>
+                {href === '/cola' && state.episodes.filter((episode) => episode.status !== 'Atendido').length > 0 && (
+                  <span className="mf-nav-count">{state.episodes.filter((episode) => episode.status !== 'Atendido').length}</span>
+                )}
+              </Link>
+            );
+          })}
+        </nav>
+        <div className="mf-sidebar-spacer" />
+        <div className="mf-side-source">
+          <span className="mf-source-led" />
+          <span>
+            <strong>{demoMode ? 'Entorno de demostración' : 'Integración n8n'}</strong>
+            <small>{demoMode ? 'No conectado a IA externa' : 'Estado según respuestas de API'}</small>
+          </span>
+        </div>
+        <div className="mf-sidebar-foot">
+          <span className="flex items-center gap-1.5"><Activity size={12} /> MVP de emergencias</span>
+          <span className="font-mono-ui text-[9px]">MEDIFLOW · 01</span>
+        </div>
+      </aside>
+
+      <div className="mf-app-main">
+        <header className="mf-topbar">
+          <div className="min-w-0">
+            <div className="hidden items-center gap-2 text-[10px] text-muted-foreground sm:flex">
+              <span className="font-semibold">MediFlow</span><span className="text-[#b9c3c9]">/</span><span>{pageName}</span>
+            </div>
+            <p className="mt-0.5 hidden text-[10px] capitalize text-muted-foreground sm:block">{currentDate}</p>
+            <h2 className="text-sm font-extrabold sm:hidden">{pageName}</h2>
+          </div>
+
+          <div className="mf-topbar-actions">
+            <div className={`mf-data-status mf-data-status-${dataStatus.tone}`} title={dataStatus.detail} aria-live="polite">
+              <span className="mf-status-dot" />
+              <span className="mf-status-label">{dataStatus.label}</span>
+              <span className="mf-status-short">{dataStatus.shortLabel}</span>
+            </div>
+
+            <form onSubmit={searchSubmit} className="mf-global-search" role="search">
+              <Search size={15} aria-hidden="true" className="shrink-0 text-muted-foreground" />
+              <label className="sr-only" htmlFor="mf-global-search">Buscar paciente o código</label>
+              <input
+                id="mf-global-search"
+                value={query}
+                onFocus={() => setSearchOpen(true)}
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                  setSearchOpen(true);
+                }}
+                placeholder="Buscar paciente…"
+                autoComplete="off"
+              />
+              {query && (
+                <button type="button" onClick={() => { setQuery(''); setSearchOpen(false); }} className="mf-search-clear" aria-label="Limpiar búsqueda">
+                  <X size={13} />
+                </button>
+              )}
+              {searchOpen && query.trim().length >= 2 && (
+                <div className="mf-search-popover">
+                  {matches.length ? matches.map((patient) => (
+                    <button
+                      type="button"
+                      key={patient.id}
+                      className="mf-search-result"
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => {
+                        const active = state.episodes.some((episode) => episode.patientId === patient.id && episode.status !== 'Atendido');
+                        setLocation(active ? `/cola?patient=${encodeURIComponent(patient.id)}` : '/registro');
+                        setSearchOpen(false);
+                      }}
+                    >
+                      <span className="mf-search-avatar">{patient.name.split(' ').map((part) => part[0]).slice(0, 2).join('')}</span>
+                      <span className="min-w-0 flex-1 text-left">
+                        <strong className="block truncate">{patient.name}</strong>
+                        <small>{patient.record} · {patient.age === null ? 'edad no informada' : `${patient.age} años`}</small>
+                      </span>
+                      <ChevronDown size={13} className="rotate-[-90deg] text-muted-foreground" />
+                    </button>
+                  )) : (
+                    <p className="px-4 py-3 text-xs text-muted-foreground">No hay coincidencias en los datos cargados.</p>
+                  )}
+                </div>
+              )}
+            </form>
+
+            <Link href="/registro" className="mf-topbar-add" aria-label="Registrar paciente">
+              <UserRoundPlus size={15} /><span>Registrar</span>
+            </Link>
+            <span className="mf-topbar-profile" aria-label="Área de operación">
+              <span className="mf-profile-avatar">MF</span>
+              <span className="hidden xl:block">
+                <strong>Operación</strong>
+                <small>Emergencias</small>
+              </span>
+            </span>
+          </div>
+        </header>
+
+        <main id="main-content" className="mf-page-content" onClick={() => searchOpen && setSearchOpen(false)}>
+          <Suspense fallback={<PageLoading />}>
+            <Switch>
+              <Route path="/" component={DashboardPage} />
+              <Route path="/registro" component={RegistrationPage} />
+              <Route path="/pacientes" component={RegistrationPage} />
+              <Route path="/cola" component={QueuePage} />
+              <Route path="/emergencias" component={QueuePage} />
+              <Route path="/triaje" component={QueuePage} />
+              <Route path="/reevaluacion" component={ReevaluationPage} />
+              <Route path="/recursos" component={ResourcesPage} />
+              <Route component={OutOfScopePage} />
+            </Switch>
+          </Suspense>
+        </main>
+
+        <footer className="mf-app-footer">
+          <span>MediFlow · Operación de emergencias</span>
+          <span>La prioridad clínica requiere revisión profesional.</span>
+        </footer>
+      </div>
+
+      <nav className="mf-mobile-nav" aria-label="Navegación móvil">
+        {navItems.map(({ href, label, icon: Icon }) => {
+          const active = href === '/' ? pathname === '/' : pathname === href || (href === '/registro' && pathname === '/pacientes') || (href === '/cola' && (pathname === '/triaje' || pathname === '/emergencias'));
+          const mobileLabel = label === 'Registro de pacientes' ? 'Registro' : label === 'Cola de atención' ? 'Cola' : label === 'Gestión de recursos' ? 'Recursos' : label === 'Panel de control' ? 'Panel' : label;
+          return (
+            <Link key={href} href={href} className={`mf-mobile-link ${active ? 'mf-mobile-link-active' : ''}`} aria-current={active ? 'page' : undefined}>
+              <Icon size={19} aria-hidden="true" />
+              <span>{mobileLabel}</span>
+            </Link>
+          );
+        })}
+      </nav>
     </div>
-    <div className="mt-5 grid gap-5 lg:grid-cols-[.9fr_1.1fr]">
-      <section className="mf-card p-5"><div className="flex items-center justify-between"><div><h2 className="text-sm font-extrabold">Capacidad por área</h2><p className="mt-0.5 text-[11px] text-muted-foreground">Uso en tiempo real</p></div><Link href="/recursos" data-testid="link-see-resources" className="text-[11px] font-bold text-accent hover:underline">Ver recursos</Link></div><div className="mt-5 space-y-4">{areas.map((area) => <div key={area.name}><div className="mb-1.5 flex justify-between text-[11px]"><span className="font-semibold">{area.name}</span><span className="font-mono-ui text-muted-foreground">{area.used}/{area.total}</span></div><div className="h-2 overflow-hidden rounded-full bg-muted"><div className={cx('h-full rounded-full', area.used / area.total > .85 ? 'bg-[#d6554b]' : area.used / area.total > .7 ? 'bg-[#d9a354]' : 'bg-accent')} style={{ width: `${area.used / area.total * 100}%` }} /></div><div className="mt-1 text-[10px] text-muted-foreground">{area.note}</div></div>)}</div></section>
-      <section className="mf-card overflow-hidden"><div className="flex items-center justify-between border-b border-border px-5 py-4"><div><h2 className="text-sm font-extrabold">Actividad del sistema</h2><p className="mt-0.5 text-[11px] text-muted-foreground">Eventos recientes de operación e integración</p></div><Link href="/auditoria" data-testid="link-see-audit" className="text-[11px] font-bold text-accent hover:underline">Abrir auditoría</Link></div><div className="divide-y divide-border">{auditEvents.slice(0, 4).map((event) => <div key={event.id} className="flex items-center gap-3 px-5 py-3"><div className={cx('flex h-7 w-7 shrink-0 items-center justify-center rounded-full', event.kind === 'Integración' ? 'bg-[#e0f2ee] text-[#14796f]' : 'bg-[#e7edf4] text-[#284b68]')}>{event.kind === 'Integración' ? <Zap size={13} /> : <ClipboardCheck size={13} />}</div><div className="min-w-0 flex-1"><div className="text-xs font-bold">{event.action}</div><div className="truncate text-[11px] text-muted-foreground">{event.detail}</div></div><div className="font-mono-ui text-[10px] text-muted-foreground">{event.time}</div></div>)}</div></section>
+  );
+}
+
+function OutOfScopePage() {
+  return (
+    <div className="mx-auto flex min-h-[55vh] max-w-xl flex-col items-center justify-center px-5 text-center">
+      <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#eef4f6] text-primary"><CircleHelp size={22} /></span>
+      <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.14em] text-accent">Alcance MVP</p>
+      <h1 className="mt-2 text-2xl font-extrabold tracking-tight">Esta sección no está incluida</h1>
+      <p className="mt-2 text-sm leading-6 text-muted-foreground">Esta versión de MediFlow se centra en el flujo de emergencias, el registro de pacientes, la cola, la reevaluación y los recursos asociados.</p>
+      <Link className="mf-primary-link mt-5" href="/">Volver al panel</Link>
     </div>
-  </div>;
+  );
 }
 
-function EpisodeRow({ episode, onPatient }: { episode: Episode; onPatient: (p: Patient) => void }) {
-  const patient = seedPatients.find((p) => p.id === episode.patientId);
-  return <button data-testid={`button-episode-${episode.id}`} onClick={() => patient && onPatient(patient)} className="flex w-full items-center gap-3 px-5 py-3.5 text-left transition-colors hover:bg-muted"><Badge className={priorityClass(episode.priority)}>{episode.priority}</Badge><div className="min-w-0 flex-1"><div className="flex items-center gap-2 text-xs font-bold"><span>{patient?.name}</span><span className="font-mono-ui text-[9px] font-normal text-muted-foreground">{patient?.record}</span></div><div className="mt-1 truncate text-[11px] text-muted-foreground">{episode.reason}</div></div><div className="hidden text-right sm:block"><div className="text-[11px] font-semibold">{episode.area}</div><div className="mt-1 font-mono-ui text-[10px] text-muted-foreground">Espera {episode.wait}</div></div><ChevronRight size={15} className="text-muted-foreground" /></button>;
+function PageLoading() {
+  return (
+    <div className="mf-panel flex min-h-60 flex-col items-center justify-center text-center">
+      <span className="h-8 w-8 animate-spin rounded-full border-2 border-[#d9e7e9] border-t-accent" aria-hidden="true" />
+      <p className="mt-3 text-xs font-semibold text-muted-foreground" role="status">Cargando pantalla…</p>
+    </div>
+  );
 }
 
-function PatientsPage({ list, onPatient, onRegister }: { list: Patient[]; onPatient: (p: Patient) => void; onRegister: () => void }) {
-  const [search, setSearch] = useState(''); const [filter, setFilter] = useState('Todos');
-  const filtered = list.filter((p) => (p.name + p.record).toLowerCase().includes(search.toLowerCase()) && (filter === 'Todos' || p.status === filter));
-  return <div className="mf-fade"><PageHeader eyebrow="Operación clínica / directorio" title="Pacientes" description={`${filtered.length} registros activos en la vista · búsqueda por nombre o expediente.`} actions={<Button icon={UserPlus} onClick={onRegister} testId="button-patients-register">Registrar paciente</Button>} /><div className="mf-card overflow-hidden"><div className="flex flex-col gap-3 border-b border-border bg-[#fbfcfd] p-4 sm:flex-row"><div className="relative flex-1"><Search className="absolute left-3 top-2.5 text-muted-foreground" size={15} /><input data-testid="input-patient-search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por nombre o expediente..." className="h-9 w-full rounded-lg border border-border bg-card pl-9 text-xs outline-none focus:border-accent" /></div><div className="flex items-center gap-2"><SlidersHorizontal size={14} className="text-muted-foreground" /><select data-testid="select-patient-status" value={filter} onChange={(e) => setFilter(e.target.value)} className="h-9 rounded-lg border border-border bg-card px-2 text-xs outline-none"><option>Todos</option><option>En espera</option><option>En atención</option><option>Observación</option><option>Alta</option></select></div></div>{filtered.length ? <div className="overflow-x-auto"><table className="w-full min-w-[720px] text-left"><thead><tr className="border-b border-border text-[10px] uppercase tracking-[.1em] text-muted-foreground"><th className="px-5 py-3 font-semibold">Paciente</th><th className="px-3 py-3 font-semibold">Edad / sexo</th><th className="px-3 py-3 font-semibold">Sangre</th><th className="px-3 py-3 font-semibold">Alergias</th><th className="px-3 py-3 font-semibold">Última visita</th><th className="px-5 py-3 text-right font-semibold">Estado</th></tr></thead><tbody>{filtered.map((p) => <tr key={p.id} data-testid={`row-patient-${p.id}`} onClick={() => onPatient(p)} className="cursor-pointer border-b border-border last:border-0 hover:bg-muted/60"><td className="px-5 py-3.5"><div className="flex items-center gap-3"><div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#e0f2ee] text-[10px] font-extrabold text-[#14796f]">{p.name.split(' ').map((x) => x[0]).slice(0, 2).join('')}</div><div><div className="text-xs font-bold">{p.name}</div><div className="mt-0.5 font-mono-ui text-[10px] text-muted-foreground">{p.record}</div></div></div></td><td className="px-3 py-3.5 font-mono-ui text-[11px]">{p.age} / {p.sex}</td><td className="px-3 py-3.5"><span className="font-mono-ui text-[11px] font-bold">{p.blood}</span></td><td className="max-w-[150px] truncate px-3 py-3.5 text-[11px] text-muted-foreground">{p.allergies.join(', ')}</td><td className="px-3 py-3.5 font-mono-ui text-[10px] text-muted-foreground">{p.lastVisit}</td><td className="px-5 py-3.5 text-right"><Badge className={statusClass(p.status)}>{p.status}</Badge></td></tr>)}</tbody></table></div> : <EmptyState icon={Users} title="No encontramos pacientes" detail="Prueba con otro nombre o limpia el filtro." />}</div></div>;
+export default function App() {
+  return (
+    <MvpStoreProvider>
+      <MvpApplication />
+    </MvpStoreProvider>
+  );
 }
-
-function EmergencyPage({ onPatient, onCare }: { onPatient: (p: Patient) => void; onCare: (episode: Episode) => void }) {
-  const [priority, setPriority] = useState('Todas'); const [showCompleted, setShowCompleted] = useState(false);
-  const items = episodes.filter((e) => (priority === 'Todas' || e.priority === priority) && (showCompleted || e.status !== 'Completado'));
-  return <div className="mf-fade"><PageHeader eyebrow="Centro de control / atención inmediata" title="Emergencias" description="Cola operativa ordenada por prioridad externa y hora de ingreso." actions={<Button variant="outline" icon={RefreshCw} onClick={() => undefined} testId="button-refresh-emergencies">Actualizar cola</Button>} /><div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4"><Metric label="Total en cola" value="06" detail="2 en atención" icon={Activity} accent="navy" /><Metric label="Prioridad P1" value="02" detail="Atención inmediata" icon={AlertTriangle} accent="red" /><Metric label="Mayor espera" value="27m" detail="Mateo Salgado" icon={Clock3} accent="amber" /><Metric label="Camas libres" value="02" detail="Emergencias" icon={BedDouble} accent="teal" /></div><div className="mf-card overflow-hidden"><div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-4"><div className="flex items-center gap-2"><ListFilter size={15} className="text-muted-foreground" /><span className="text-xs font-bold">Filtrar por prioridad</span>{['Todas', 'P1', 'P2', 'P3'].map((p) => <button key={p} data-testid={`button-filter-${p}`} onClick={() => setPriority(p)} className={cx('rounded-md px-2.5 py-1.5 text-[10px] font-bold', priority === p ? p === 'P1' ? priorityClass('P1') : 'bg-primary text-white' : 'bg-muted text-muted-foreground')}>{p}</button>)}</div><label className="flex items-center gap-2 text-[11px] text-muted-foreground"><input data-testid="checkbox-show-completed" type="checkbox" checked={showCompleted} onChange={(e) => setShowCompleted(e.target.checked)} className="accent-[hsl(var(--accent))]" /> Mostrar completados</label></div><div className="divide-y divide-border">{items.map((episode) => <div key={episode.id} className="flex flex-col gap-4 px-5 py-4 md:flex-row md:items-center"><div className={cx('flex h-9 w-9 shrink-0 items-center justify-center rounded-lg font-mono-ui text-xs font-bold', priorityClass(episode.priority))}>{episode.priority}</div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><span className="text-sm font-extrabold">{seedPatients.find((p) => p.id === episode.patientId)?.name}</span><span className="font-mono-ui text-[10px] text-muted-foreground">{episode.id}</span><Badge className={cx(episode.status === 'En atención' ? 'bg-[#e0f2ee] text-[#14796f]' : 'bg-muted text-muted-foreground')}>{episode.status}</Badge></div><p className="mt-1 text-xs text-muted-foreground">{episode.reason}</p><div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 font-mono-ui text-[10px] text-muted-foreground"><span>FC {episode.vitals.fc}</span><span>PA {episode.vitals.pa}</span><span>SpO₂ {episode.vitals.spo2}%</span><span>{episode.area}</span><span>Espera {episode.wait}</span></div></div><div className="flex shrink-0 gap-2"><Button variant="quiet" onClick={() => { const p = seedPatients.find((x) => x.id === episode.patientId); if (p) onPatient(p); }} testId={`button-open-patient-${episode.id}`}>Ficha</Button>{episode.status !== 'Completado' && <Button onClick={() => onCare(episode)} icon={episode.status === 'En atención' ? ClipboardCheck : ArrowRight} testId={`button-attend-${episode.id}`}>{episode.status === 'En atención' ? 'Atender' : 'Tomar caso'}</Button>}</div></div>)}</div></div></div>;
-}
-
-function TriagePage({ onToast }: { onToast: (t: Toast) => void }) {
-  const [items, setItems] = useState(episodes); const [received, setReceived] = useState<string[]>([]);
-  const confirm = async (episode: Episode) => { setReceived((x) => [...x, episode.id]); await receiveExternalTriage(episode.id); onToast({ message: `Resultado n8n confirmado para ${episode.id}`, tone: 'success' }); };
-  return <div className="mf-fade"><PageHeader eyebrow="Integración externa / n8n → triaje" title="Triaje" description="Las prioridades se reciben desde un proceso externo. MediFlow las presenta y deja registro de confirmación." actions={<div className="flex items-center gap-2 rounded-lg border border-[#b9e0db] bg-[#eaf8f5] px-3 py-2 text-[10px] font-bold text-[#14796f]"><span className="h-2 w-2 rounded-full bg-accent" /> Webhook conectado</div>} /><div className="mb-5 grid grid-cols-3 gap-3"><Metric label="Pendientes" value="03" detail="prioridad externa" icon={ListFilter} accent="amber" /><Metric label="Recibidos hoy" value="24" detail="desde n8n" icon={ArrowDownToLine} accent="teal" /><Metric label="Tiempo medio" value="02m" detail="entrada → cola" icon={Clock3} accent="navy" /></div><div className="grid gap-5 xl:grid-cols-[1.2fr_.8fr]"><section className="mf-card overflow-hidden"><div className="border-b border-border px-5 py-4"><h2 className="text-sm font-extrabold">Cola pendiente de confirmación</h2><p className="mt-1 text-[11px] text-muted-foreground">Resultado externo listo para que el equipo lo confirme.</p></div><div className="divide-y divide-border">{items.slice(1, 4).map((episode) => <div key={episode.id} className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center"><div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#e7edf4] font-mono-ui text-xs font-bold text-[#284b68]">IN</div><div className="min-w-0 flex-1"><div className="text-xs font-bold">{seedPatients.find((p) => p.id === episode.patientId)?.name}</div><div className="mt-1 text-[11px] text-muted-foreground">{episode.reason}</div><div className="mt-2 flex items-center gap-2"><Badge className={priorityClass(episode.priority)}>{episode.priority} · recibido</Badge><span className="font-mono-ui text-[9px] text-muted-foreground">n8n / triage-v2</span></div></div><Button onClick={() => confirm(episode)} disabled={received.includes(episode.id)} icon={received.includes(episode.id) ? Check : ClipboardCheck} testId={`button-confirm-triage-${episode.id}`}>{received.includes(episode.id) ? 'Confirmado' : 'Confirmar resultado'}</Button></div>)}</div></section><section className="mf-card overflow-hidden"><div className="border-b border-border bg-[#f4f8fa] px-5 py-4"><div className="flex items-center gap-2"><Workflow size={16} className="text-accent" /><h2 className="text-sm font-extrabold">Separación de proceso</h2></div></div><div className="space-y-4 p-5"><FlowStep number="01" label="Entrada" text="Paciente registrado en recepción" tone="muted" /><ArrowDownToLine size={15} className="ml-5 text-muted-foreground" /><FlowStep number="02" label="Integración" text="n8n calcula y envía prioridad" tone="accent" /><ArrowDownToLine size={15} className="ml-5 text-muted-foreground" /><FlowStep number="03" label="Resultado" text="Equipo confirma en MediFlow" tone="navy" /></div><div className="mx-5 mb-5 rounded-lg border border-dashed border-[#b9e0db] bg-[#eaf8f5] p-3 text-[11px] leading-relaxed text-[#286b67]"><strong className="font-bold">Nota de operación:</strong> esta demo no calcula prioridades en frontend. El valor mostrado representa un resultado recibido de un servicio externo.</div></section></div></div>;
-}
-
-function FlowStep({ number, label, text, tone }: { number: string; label: string; text: string; tone: 'muted' | 'accent' | 'navy' }) {
-  return <div className="flex items-center gap-3"><span className={cx('flex h-8 w-8 items-center justify-center rounded-full font-mono-ui text-[10px] font-bold', tone === 'accent' ? 'bg-[#d8f1ed] text-[#14796f]' : tone === 'navy' ? 'bg-[#dfe8f0] text-[#284b68]' : 'bg-muted text-muted-foreground')}>{number}</span><div><div className="text-[10px] font-bold uppercase tracking-[.1em] text-muted-foreground">{label}</div><div className="mt-0.5 text-xs font-semibold">{text}</div></div></div>;
-}
-
-function PatientDrawer({ patient, onClose, onCare }: { patient: Patient; onClose: () => void; onCare: () => void }) {
-  const episode = episodes.find((e) => e.patientId === patient.id);
-  return <div className="fixed inset-0 z-40 bg-[#0e2c3a]/20" onClick={onClose}><aside onClick={(e) => e.stopPropagation()} className="mf-fade absolute right-0 top-0 h-full w-full max-w-[480px] overflow-y-auto border-l border-border bg-card shadow-2xl"><div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card/95 px-5 py-4 backdrop-blur"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#d8f1ed] text-xs font-extrabold text-[#14796f]">{patient.name.split(' ').map((x) => x[0]).slice(0, 2).join('')}</div><div><div className="text-sm font-extrabold">{patient.name}</div><div className="font-mono-ui text-[10px] text-muted-foreground">{patient.record} · {patient.status}</div></div></div><button data-testid="button-close-patient-drawer" onClick={onClose} className="rounded-md p-1.5 text-muted-foreground hover:bg-muted"><X size={18} /></button></div><div className="space-y-5 p-5"><div className="grid grid-cols-3 gap-2"><MiniInfo label="Edad" value={`${patient.age} años`} /><MiniInfo label="Sexo" value={patient.sex === 'F' ? 'Femenino' : 'Masculino'} /><MiniInfo label="Sangre" value={patient.blood} /></div><div className="rounded-lg border border-[#f0cfca] bg-[#fff6f5] p-3"><div className="flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-[.1em] text-[#a92e29]"><AlertTriangle size={14} /> Alergias conocidas</div><div className="mt-2 text-xs font-bold text-[#7d3733]">{patient.allergies.join(' · ')}</div></div><div><SectionLabel>Datos clínicos</SectionLabel><div className="mt-2 space-y-2 rounded-lg border border-border p-3"><DetailLine label="Condiciones crónicas" value={patient.chronic.join(', ')} /><DetailLine label="Medicamentos activos" value={patient.medications.join(', ')} /><DetailLine label="Teléfono de contacto" value={patient.phone} /><DetailLine label="Última visita" value={patient.lastVisit} /></div></div>{episode && <div><SectionLabel>Episodio actual</SectionLabel><div className="mt-2 rounded-lg border border-border p-3"><div className="flex items-center justify-between"><Badge className={priorityClass(episode.priority)}>{episode.priority}</Badge><span className="font-mono-ui text-[10px] text-muted-foreground">{episode.id}</span></div><div className="mt-3 text-sm font-bold">{episode.reason}</div><div className="mt-3 grid grid-cols-4 gap-2">{[['FC', episode.vitals.fc.toString()], ['PA', episode.vitals.pa], ['SpO₂', `${episode.vitals.spo2}%`], ['Temp', `${episode.vitals.temp}°`]].map(([key, value]) => <div key={key} className="rounded bg-muted p-2 text-center"><div className="font-mono-ui text-[9px] text-muted-foreground">{key}</div><div className="mt-1 font-mono-ui text-[11px] font-bold">{value}</div></div>)}</div><p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">{episode.observations}</p></div></div>}<div className="flex gap-2 pt-2"><Button icon={Stethoscope} onClick={onCare} testId="button-open-care">Atender episodio</Button><Button variant="outline" icon={FileHeart} onClick={() => undefined} testId="button-full-history">Ver historial completo</Button></div></div></aside></div>;
-}
-
-function MiniInfo({ label, value }: { label: string; value: string }) { return <div className="rounded-lg bg-muted p-3"><div className="font-mono-ui text-[9px] uppercase tracking-[.1em] text-muted-foreground">{label}</div><div className="mt-1 text-xs font-bold">{value}</div></div>; }
-function SectionLabel({ children }: { children: ReactNode }) { return <div className="font-mono-ui text-[10px] font-bold uppercase tracking-[.13em] text-muted-foreground">{children}</div>; }
-function DetailLine({ label, value }: { label: string; value: string }) { return <div className="flex justify-between gap-3 border-b border-border pb-2 text-[11px] last:border-0 last:pb-0"><span className="text-muted-foreground">{label}</span><span className="text-right font-semibold">{value}</span></div>; }
-
-function CareModal({ episode, onClose, onToast }: { episode: Episode; onClose: () => void; onToast: (t: Toast) => void }) {
-  const [action, setAction] = useState('Completar atención'); const patient = seedPatients.find((p) => p.id === episode.patientId);
-  return <Modal eyebrow={`Episodio ${episode.id}`} title={patient?.name ?? 'Atención clínica'} onClose={onClose}><div className="mb-4 rounded-lg bg-muted p-3"><div className="text-xs font-bold">{episode.reason}</div><div className="mt-1 text-[11px] text-muted-foreground">{episode.area} · {episode.doctor}</div></div><label className="block text-[11px] font-bold text-muted-foreground">Siguiente acción<select data-testid="select-care-action" value={action} onChange={(e) => setAction(e.target.value)} className="mt-1.5 h-10 w-full rounded-lg border border-border bg-card px-3 text-xs outline-none focus:border-accent"><option>Completar atención</option><option>Dar de alta</option><option>Enviar a observación</option><option>Solicitar traslado</option><option>Asignar cama</option></select></label>{action === 'Asignar cama' && <label className="mt-4 block text-[11px] font-bold text-muted-foreground">Cama disponible<select data-testid="select-care-bed" className="mt-1.5 h-10 w-full rounded-lg border border-border bg-card px-3 text-xs outline-none"><option>E-02 · Emergencias · Monitorizada</option><option>T-02 · Trauma · Crítica</option><option>H-13 · Hospitalización · Reservada</option></select></label>}<label className="mt-4 block text-[11px] font-bold text-muted-foreground">Nota de atención<textarea data-testid="textarea-care-note" defaultValue={episode.observations} rows={3} className="mt-1.5 w-full resize-none rounded-lg border border-border bg-card p-3 text-xs outline-none focus:border-accent" /></label><div className="mt-5 flex justify-end gap-2"><Button variant="outline" onClick={onClose} testId="button-cancel-care">Cancelar</Button><Button onClick={() => { onToast({ message: `${action} registrada para ${patient?.name}`, tone: 'success' }); onClose(); }} icon={Check} testId="button-confirm-care">Confirmar acción</Button></div></Modal>;
-}
-
-function ResourcesPage({ onToast }: { onToast: (t: Toast) => void }) {
-  const [tab, setTab] = useState('Camas'); const tabs = ['Camas', 'Áreas', 'Quirófanos', 'Equipos'];
-  return <div className="mf-fade"><PageHeader eyebrow="Operación clínica / capacidad" title="Recursos" description="Disponibilidad física y operativa del Hospital Central." actions={<Button variant="outline" icon={RefreshCw} onClick={() => onToast({ message: 'Disponibilidad actualizada', tone: 'success' })} testId="button-refresh-resources">Actualizar</Button>} /><div className="flex gap-1 border-b border-border">{tabs.map((x) => <button key={x} data-testid={`button-resource-tab-${x}`} onClick={() => setTab(x)} className={cx('border-b-2 px-4 py-3 text-xs font-bold', tab === x ? 'border-accent text-accent' : 'border-transparent text-muted-foreground')}>{x}</button>)}</div>{tab === 'Camas' && <div className="mt-5 grid gap-5 xl:grid-cols-[.8fr_1.2fr]"><div className="grid grid-cols-2 gap-3">{[['Disponibles', '13', 'bg-[#e0f2ee] text-[#14796f]'], ['Ocupadas', '55', 'bg-[#e7edf4] text-[#284b68]'], ['Limpieza', '04', 'bg-[#fff1d8] text-[#a56510]'], ['Reservadas', '02', 'bg-[#f1e8f6] text-[#79528c]']].map(([label, value, cls]) => <div key={label} className="mf-card p-4"><div className={cx('mb-3 flex h-8 w-8 items-center justify-center rounded-lg', cls)}><BedDouble size={16} /></div><div className="font-mono-ui text-2xl font-bold">{value}</div><div className="mt-1 text-[11px] text-muted-foreground">{label}</div></div>)}</div><ResourceTable rows={beds.map((b) => [b.id, b.area, b.type, b.patient, b.status])} headers={['Cama', 'Área', 'Tipo', 'Paciente', 'Estado']} onAction={(row) => onToast({ message: row[4] === 'Libre' ? `${row[0]} reservada para el siguiente ingreso` : `Detalle de ${row[0]}`, tone: 'info' })} /></div>}{tab === 'Áreas' && <div className="mt-5 grid gap-4 md:grid-cols-2">{areas.map((a) => <div key={a.name} className="mf-card p-5"><div className="flex justify-between"><div><h2 className="text-sm font-extrabold">{a.name}</h2><p className="mt-1 text-[11px] text-muted-foreground">{a.note}</p></div><span className="font-mono-ui text-sm">{a.used}/{a.total}</span></div><div className="mt-5 h-3 rounded-full bg-muted"><div className={cx('h-full rounded-full', a.used / a.total > .85 ? 'bg-[#d6554b]' : 'bg-accent')} style={{ width: `${a.used / a.total * 100}%` }} /></div><div className="mt-3 flex justify-between text-[10px] text-muted-foreground"><span>Ocupación</span><span>{Math.round(a.used / a.total * 100)}%</span></div></div>)}</div>}{tab === 'Quirófanos' && <div className="mt-5 grid gap-4 md:grid-cols-3">{operatingRooms.map((room) => <div key={room.id} className="mf-card p-5"><div className="flex justify-between"><span className="font-mono-ui text-[10px] font-bold text-accent">{room.id}</span><Badge className={statusClass(room.status)}>{room.status}</Badge></div><h2 className="mt-5 text-sm font-extrabold">{room.procedure}</h2><p className="mt-2 text-[11px] text-muted-foreground">{room.doctor}</p><div className="mt-5 border-t border-border pt-3 font-mono-ui text-[10px] text-muted-foreground">Inicio · {room.time}</div></div>)}</div>}{tab === 'Equipos' && <EmptyState icon={Boxes} title="Equipos monitorizados" detail="18 equipos conectados · 1 requiere mantenimiento preventivo." action={<Button onClick={() => onToast({ message: 'Solicitud de mantenimiento creada', tone: 'success' })} icon={Send} testId="button-maintenance">Solicitar mantenimiento</Button>} />}</div>;
-}
-
-function ResourceTable({ rows, headers, onAction }: { rows: string[][]; headers: string[]; onAction: (row: string[]) => void }) { return <div className="mf-card overflow-hidden"><div className="overflow-x-auto"><table className="w-full min-w-[620px] text-left"><thead><tr className="border-b border-border text-[10px] uppercase tracking-[.1em] text-muted-foreground">{headers.map((h) => <th key={h} className="px-4 py-3 font-semibold">{h}</th>)}<th className="px-4 py-3" /></tr></thead><tbody>{rows.map((row, i) => <tr key={row[0]} className="border-b border-border last:border-0 hover:bg-muted/40">{row.map((cell, j) => <td key={`${row[0]}-${j}`} className={cx('px-4 py-3 text-xs', j === 0 ? 'font-mono-ui font-bold' : j === row.length - 1 ? 'font-semibold' : 'text-muted-foreground')}>{j === row.length - 1 ? <Badge className={statusClass(cell)}>{cell}</Badge> : cell}</td>)}<td className="px-4 py-3 text-right"><button data-testid={`button-resource-${i}`} onClick={() => onAction(row)} className="rounded p-1 text-muted-foreground hover:bg-muted"><MoreHorizontal size={15} /></button></td></tr>)}</tbody></table></div></div>; }
-function EmptyState({ icon: EmptyIcon, title, detail, action }: { icon: Icon; title: string; detail: string; action?: ReactNode }) { return <div className="mf-card flex min-h-[220px] flex-col items-center justify-center p-8 text-center"><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#e0f2ee] text-[#14796f]"><EmptyIcon size={23} /></div><h2 className="mt-4 text-sm font-extrabold">{title}</h2><p className="mt-1 max-w-sm text-xs text-muted-foreground">{detail}</p>{action && <div className="mt-4">{action}</div>}</div>; }
-
-function HistoryPage({ onPatient }: { onPatient: (p: Patient) => void }) { const [query, setQuery] = useState(''); const found = seedPatients.filter((p) => (p.name + p.record).toLowerCase().includes(query.toLowerCase())); return <div className="mf-fade"><PageHeader eyebrow="Consulta protegida / expediente" title="Historial clínico" description="Encuentra una ficha para revisar episodios, medicamentos y trazabilidad clínica." /><div className="grid gap-5 lg:grid-cols-[.75fr_1.25fr]"><div className="mf-card overflow-hidden"><div className="border-b border-border p-4"><div className="relative"><Search className="absolute left-3 top-2.5 text-muted-foreground" size={15} /><input data-testid="input-history-search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Nombre o expediente..." className="h-9 w-full rounded-lg border border-border bg-card pl-9 text-xs outline-none focus:border-accent" /></div></div><div className="divide-y divide-border">{found.map((p) => <button key={p.id} data-testid={`button-history-patient-${p.id}`} onClick={() => onPatient(p)} className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-muted"><div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#e7edf4] text-[10px] font-extrabold text-[#284b68]">{p.name.split(' ').map((x) => x[0]).slice(0, 2).join('')}</div><div className="min-w-0 flex-1"><div className="truncate text-xs font-bold">{p.name}</div><div className="font-mono-ui text-[10px] text-muted-foreground">{p.record}</div></div><ChevronRight size={14} className="text-muted-foreground" /></button>)}</div></div><div className="mf-card flex min-h-[390px] flex-col items-center justify-center p-8 text-center"><FileHeart size={32} className="text-accent" /><h2 className="mt-4 text-lg font-extrabold">Selecciona un expediente</h2><p className="mt-1 max-w-sm text-xs leading-relaxed text-muted-foreground">La ficha completa aparecerá aquí al seleccionar un paciente en el buscador.</p></div></div></div>; }
-
-function LabsPage({ onToast }: { onToast: (t: Toast) => void }) { const [filter, setFilter] = useState('Todos'); const rows = labs.filter((x) => filter === 'Todos' || x.status === filter); return <div className="mf-fade"><PageHeader eyebrow="Operación clínica / diagnóstico" title="Laboratorio" description="Estudios recibidos del LIS y resultados listos para validación." actions={<Button variant="outline" icon={Send} onClick={() => onToast({ message: 'Solicitud enviada al LIS', tone: 'success' })} testId="button-new-lab">Nueva solicitud</Button>} /><div className="mf-card overflow-hidden"><div className="flex items-center gap-2 border-b border-border p-4">{['Todos', 'En proceso', 'Listo', 'Validado'].map((x) => <button key={x} data-testid={`button-lab-filter-${x}`} onClick={() => setFilter(x)} className={cx('rounded-md px-3 py-1.5 text-[10px] font-bold', filter === x ? 'bg-primary text-white' : 'bg-muted text-muted-foreground')}>{x}</button>)}</div><ResourceTable headers={['Estudio', 'Paciente', 'Solicitud', 'Urgencia', 'Estado']} rows={rows.map((x) => [x.study, x.patient, x.requested, x.urgency, x.status])} onAction={(row) => onToast({ message: row[4] === 'En proceso' ? 'Resultado aún en proceso en LIS' : `Resultado abierto: ${row[0]}`, tone: 'info' })} /></div></div>; }
-
-function PharmacyPage({ onToast }: { onToast: (t: Toast) => void }) { return <div className="mf-fade"><PageHeader eyebrow="Operación clínica / suministro" title="Farmacia" description="Inventario crítico para continuidad de atención." actions={<Button icon={Plus} onClick={() => onToast({ message: 'Formulario de ingreso de inventario preparado', tone: 'info' })} testId="button-add-medication">Registrar entrada</Button>} /><div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4"><Metric label="Ítems activos" value="128" detail="en catálogo" icon={Pill} accent="navy" /><Metric label="Stock crítico" value="04" detail="requieren acción" icon={AlertTriangle} accent="red" /><Metric label="Por vencer" value="09" detail="próximos 30 días" icon={Clock3} accent="amber" /><Metric label="Movimientos hoy" value="36" detail="entradas y salidas" icon={ArrowDownToLine} accent="teal" /></div><div className="mf-card overflow-hidden"><div className="border-b border-border p-4"><div className="relative max-w-md"><Search className="absolute left-3 top-2.5 text-muted-foreground" size={15} /><input data-testid="input-pharmacy-search" placeholder="Buscar medicamento o presentación..." className="h-9 w-full rounded-lg border border-border bg-card pl-9 text-xs outline-none focus:border-accent" /></div></div><ResourceTable headers={['Medicamento', 'Presentación', 'Stock', 'Ubicación', 'Estado']} rows={pharmacy.map((x) => [x.name, x.presentation, `${x.stock} uds.`, x.location, x.status])} onAction={(row) => onToast({ message: row[4] === 'Disponible' ? `Salida registrada: ${row[0]}` : `Solicitud de reposición creada para ${row[0]}`, tone: row[4] === 'Disponible' ? 'info' : 'warning' })} /></div></div>; }
-
-function AmbulancesPage({ onToast }: { onToast: (t: Toast) => void }) { return <div className="mf-fade"><PageHeader eyebrow="Logística / movilidad" title="Ambulancias" description="Flota, ubicación y disponibilidad de respuesta prehospitalaria." actions={<Button variant="outline" icon={RefreshCw} onClick={() => onToast({ message: 'Ubicaciones actualizadas', tone: 'success' })} testId="button-refresh-ambulances">Actualizar ubicación</Button>} /><div className="grid gap-4 md:grid-cols-2">{ambulances.map((a) => <div key={a.id} className="mf-card p-5"><div className="flex items-start justify-between"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e7edf4] text-[#284b68]"><Ambulance size={20} /></div><div><div className="font-mono-ui text-[10px] font-bold text-accent">{a.id} · {a.plate}</div><div className="mt-1 text-xs font-bold">{a.crew}</div></div></div><Badge className={a.status === 'En base' ? 'bg-[#e0f2ee] text-[#14796f]' : a.status === 'Mantenimiento' ? 'bg-[#fbe3e1] text-[#a92e29]' : 'bg-[#fff1d8] text-[#a56510]'}>{a.status}</Badge></div><div className="mt-5 grid grid-cols-2 gap-3 border-t border-border pt-4"><div><div className="text-[10px] uppercase tracking-[.1em] text-muted-foreground">Ubicación</div><div className="mt-1 text-xs font-semibold">{a.location}</div></div><div><div className="text-[10px] uppercase tracking-[.1em] text-muted-foreground">ETA</div><div className="mt-1 font-mono-ui text-xs font-semibold">{a.eta}</div></div></div><Button variant="outline" onClick={() => onToast({ message: `Canal abierto con ${a.id}`, tone: 'info' })} testId={`button-contact-${a.id}`}><Send size={14} /> Contactar unidad</Button></div>)}</div></div>; }
-
-function StaffPage({ onToast }: { onToast: (t: Toast) => void }) { return <div className="mf-fade"><PageHeader eyebrow="Operación clínica / equipo" title="Personal" description="Turnos, roles y carga clínica del equipo presente." actions={<Button icon={UserPlus} onClick={() => onToast({ message: 'Invitación de personal preparada', tone: 'info' })} testId="button-invite-staff">Agregar personal</Button>} /><div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{staff.map((member) => <div key={member.id} className="mf-card p-4"><div className="flex items-start justify-between"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#dfe8f0] text-xs font-extrabold text-[#284b68]">{member.initials}</div><div><div className="text-xs font-extrabold">{member.name}</div><div className="mt-1 text-[11px] text-muted-foreground">{member.role}</div></div></div><Badge className={member.status === 'En turno' ? 'bg-[#e0f2ee] text-[#14796f]' : 'bg-[#fff1d8] text-[#a56510]'}>{member.status}</Badge></div><div className="mt-4 flex items-center justify-between border-t border-border pt-3 text-[11px]"><span className="font-mono-ui text-muted-foreground">{member.shift}</span><span className="font-semibold">{member.patients} pacientes</span></div></div>)}</div></div>; }
-
-function WorkflowsPage({ onToast }: { onToast: (t: Toast) => void }) { const [running, setRunning] = useState<string | null>(null); const run = async (id: string, name: string) => { setRunning(id); await runWorkflow(id); setRunning(null); onToast({ message: `Demostración ejecutada: ${name}`, tone: 'success' }); }; return <div className="mf-fade"><PageHeader eyebrow="Integración / n8n" title="Automatizaciones" description="Procesos externos conectan recepción, sistemas clínicos y operación. MediFlow muestra entrada y resultado sin ocultar la integración." actions={<div className="flex items-center gap-2 rounded-lg border border-[#b9e0db] bg-[#eaf8f5] px-3 py-2 text-[10px] font-bold text-[#14796f]"><Cpu size={14} /> n8n operativo</div>} /><div className="grid gap-4">{workflows.map((w) => <div key={w.id} className="mf-card p-5"><div className="flex flex-col justify-between gap-4 md:flex-row md:items-center"><div className="flex items-start gap-4"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#e0f2ee] text-[#14796f]"><Workflow size={20} /></div><div><div className="flex flex-wrap items-center gap-2"><h2 className="text-sm font-extrabold">{w.name}</h2><Badge className={w.status === 'Activo' ? 'bg-[#e0f2ee] text-[#14796f]' : 'bg-muted text-muted-foreground'}>{w.status}</Badge></div><div className="mt-3 flex flex-wrap items-center gap-2 text-[10px]"><span className="rounded bg-muted px-2 py-1 font-semibold">{w.source}</span><ArrowRight size={13} className="text-accent" /><span className="rounded bg-muted px-2 py-1 font-semibold">{w.target}</span></div></div></div><div className="flex items-center gap-5 md:pl-4"><div className="hidden text-right sm:block"><div className="font-mono-ui text-xs font-bold">{w.runs} ejecuciones</div><div className="mt-1 text-[10px] text-muted-foreground">{w.last}</div></div><Button onClick={() => run(w.id, w.name)} disabled={w.status !== 'Activo' || running === w.id} icon={running === w.id ? LoaderCircle : Zap} testId={`button-run-workflow-${w.id}`}>{running === w.id ? 'Ejecutando...' : 'Ejecutar demo'}</Button></div></div></div>)}</div></div>; }
-
-function AuditPage({ onToast }: { onToast: (t: Toast) => void }) { const [search, setSearch] = useState(''); const list = auditEvents.filter((e) => (e.action + e.detail + e.actor).toLowerCase().includes(search.toLowerCase())); return <div className="mf-fade"><PageHeader eyebrow="Gobernanza / trazabilidad" title="Auditoría" description="Registro inmutable de acciones clínicas, operativas e integraciones." actions={<Button variant="outline" icon={ArrowDownToLine} onClick={() => onToast({ message: 'Exportación CSV iniciada', tone: 'success' })} testId="button-export-audit">Exportar registro</Button>} /><div className="mf-card overflow-hidden"><div className="border-b border-border p-4"><div className="relative max-w-md"><Search className="absolute left-3 top-2.5 text-muted-foreground" size={15} /><input data-testid="input-audit-search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Filtrar eventos..." className="h-9 w-full rounded-lg border border-border bg-card pl-9 text-xs outline-none focus:border-accent" /></div></div><div className="divide-y divide-border">{list.map((event) => <div key={event.id} className="flex flex-col gap-2 px-5 py-4 sm:flex-row sm:items-center"><div className="w-20 font-mono-ui text-[10px] text-muted-foreground">{event.time}</div><div className={cx('flex h-7 w-7 shrink-0 items-center justify-center rounded-lg', event.kind === 'Integración' ? 'bg-[#e0f2ee] text-[#14796f]' : 'bg-[#e7edf4] text-[#284b68]')}>{event.kind === 'Integración' ? <Zap size={13} /> : <ShieldCheck size={13} />}</div><div className="min-w-0 flex-1"><div className="text-xs font-bold">{event.action}</div><div className="mt-0.5 truncate text-[11px] text-muted-foreground">{event.detail}</div></div><div className="flex items-center gap-3"><Badge className="bg-muted text-muted-foreground">{event.kind}</Badge><span className="text-[11px] font-semibold">{event.actor}</span></div></div>)}</div></div></div>; }
-
-function ConfigPage({ onToast }: { onToast: (t: Toast) => void }) { const [saved, setSaved] = useState(false); return <div className="mf-fade"><PageHeader eyebrow="Sistema / administración" title="Configuración" description="Estado de servicios y parámetros de operación del entorno demo." actions={<Button onClick={() => { setSaved(true); onToast({ message: 'Configuración guardada', tone: 'success' }); }} icon={Check} testId="button-save-config">Guardar cambios</Button>} /><div className="grid gap-5 lg:grid-cols-[1.2fr_.8fr]"><section className="mf-card overflow-hidden"><div className="border-b border-border px-5 py-4"><div className="flex items-center gap-2"><Gauge size={16} className="text-accent" /><h2 className="text-sm font-extrabold">Estado de integraciones</h2></div></div><div className="divide-y divide-border">{systemServices.map((service) => <div key={service.name} className="flex items-center gap-3 px-5 py-4"><div className={cx('h-2.5 w-2.5 rounded-full', service.status === 'Operativo' ? 'bg-accent' : service.status === 'Latencia' ? 'bg-[#d9a354]' : 'bg-[#d6554b]')} /><div className="min-w-0 flex-1"><div className="text-xs font-bold">{service.name}</div><div className="mt-1 text-[11px] text-muted-foreground">{service.detail}</div></div><div className="text-right"><Badge className={statusClass(service.status)}>{service.status}</Badge><div className="mt-1 font-mono-ui text-[10px] text-muted-foreground">{service.latency}</div></div></div>)}</div></section><section className="mf-card p-5"><SectionLabel>Preferencias del turno</SectionLabel><div className="mt-4 space-y-4"><Setting label="Notificaciones críticas" detail="Alertas P1, stock crítico y saturación" checked /><Setting label="Confirmación de integraciones" detail="Solicitar confirmación para resultados n8n" checked /><Setting label="Modo alta seguridad" detail="Bloquear sesión tras 15 min de inactividad" checked={false} /><Setting label="Vista compacta de tablas" detail="Mostrar más registros por pantalla" checked={false} /></div><div className="mt-5 rounded-lg border border-border bg-muted p-3 text-[11px] text-muted-foreground"><div className="flex items-center gap-2 font-bold text-foreground"><LockKeyhole size={14} /> Entorno de demostración</div><div className="mt-1 leading-relaxed">Los datos son ficticios. Las integraciones están simuladas y no modifican sistemas clínicos reales.</div></div>{saved && <div className="mt-3 text-[11px] font-semibold text-accent">Cambios guardados localmente.</div>}</section></div></div>; }
-function Setting({ label, detail, checked }: { label: string; detail: string; checked: boolean }) { const [on, setOn] = useState(checked); return <label className="flex cursor-pointer items-center justify-between gap-4"><span><span className="block text-xs font-bold">{label}</span><span className="mt-1 block text-[10px] text-muted-foreground">{detail}</span></span><button type="button" data-testid={`button-setting-${label}`} onClick={() => setOn(!on)} className={cx('relative h-5 w-9 shrink-0 rounded-full transition-colors', on ? 'bg-accent' : 'bg-[#cbd5db]')}><span className={cx('absolute top-1 h-3 w-3 rounded-full bg-white transition-transform', on ? 'left-5' : 'left-1')} /></button></label>; }
-
-function RegisterModal({ onClose, onCreated, onToast }: { onClose: () => void; onCreated: (patient: Patient) => void; onToast: (t: Toast) => void }) { const [form, setForm] = useState({ name: '', age: '', sex: 'F', phone: '' }); const [loading, setLoading] = useState(false); const submit = async (e: React.FormEvent) => { e.preventDefault(); if (!form.name || !form.age) return; setLoading(true); const created = await registerPatient({ name: form.name, age: Number(form.age), sex: form.sex as 'F' | 'M', phone: form.phone }); setLoading(false); onCreated({ ...created, blood: 'O+', allergies: ['Pendiente de registro'], chronic: ['Pendiente de registro'], medications: ['Pendiente de registro'], status: 'En espera', lastVisit: 'Ahora' }); onToast({ message: `Paciente ${form.name} registrado correctamente`, tone: 'success' }); onClose(); }; return <Modal eyebrow="Recepción / nuevo ingreso" title="Registrar paciente" onClose={onClose}><form onSubmit={submit}><div className="grid gap-4 sm:grid-cols-2"><label className="sm:col-span-2 text-[11px] font-bold text-muted-foreground">Nombre completo<input data-testid="input-register-name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ej. Lucía Hernández" className="mt-1.5 h-10 w-full rounded-lg border border-border bg-card px-3 text-xs outline-none focus:border-accent" /></label><label className="text-[11px] font-bold text-muted-foreground">Edad<input data-testid="input-register-age" required type="number" min="0" value={form.age} onChange={(e) => setForm({ ...form, age: e.target.value })} placeholder=" años" className="mt-1.5 h-10 w-full rounded-lg border border-border bg-card px-3 text-xs outline-none focus:border-accent" /></label><label className="text-[11px] font-bold text-muted-foreground">Sexo<select data-testid="select-register-sex" value={form.sex} onChange={(e) => setForm({ ...form, sex: e.target.value })} className="mt-1.5 h-10 w-full rounded-lg border border-border bg-card px-3 text-xs outline-none focus:border-accent"><option value="F">Femenino</option><option value="M">Masculino</option></select></label><label className="sm:col-span-2 text-[11px] font-bold text-muted-foreground">Teléfono de contacto<input data-testid="input-register-phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="55 0000 0000" className="mt-1.5 h-10 w-full rounded-lg border border-border bg-card px-3 text-xs outline-none focus:border-accent" /></label></div><div className="mt-4 rounded-lg bg-[#eaf8f5] p-3 text-[11px] leading-relaxed text-[#286b67]">El expediente se creará en estado <strong>En espera</strong>. Triaje recibirá el ingreso para continuar el proceso.</div><div className="mt-5 flex justify-end gap-2"><Button variant="outline" onClick={onClose} testId="button-cancel-register">Cancelar</Button><Button type="submit" disabled={loading} icon={loading ? LoaderCircle : UserPlus} testId="button-submit-register">{loading ? 'Registrando...' : 'Registrar paciente'}</Button></div></form></Modal>; }
-
-function VoiceModal({ onClose, onToast }: { onClose: () => void; onToast: (t: Toast) => void }) { const [recording, setRecording] = useState(false); const [done, setDone] = useState(false); return <Modal eyebrow="Demo / entrada asistida" title="Registro por voz" onClose={onClose}><div className="rounded-xl border border-[#b9e0db] bg-[#eaf8f5] p-5 text-center"><div className={cx('mx-auto flex h-16 w-16 items-center justify-center rounded-full', recording ? 'bg-accent text-white' : 'bg-white text-accent')}>{recording ? <div className="flex items-end gap-1">{[1, 2, 3, 2, 4, 2].map((height, i) => <span key={i} className="w-1 rounded-full bg-white" style={{ height: `${height * 5}px` }} />)}</div> : <Mic size={26} />}</div><h3 className="mt-4 text-sm font-extrabold">{recording ? 'Escuchando entrada demo...' : done ? 'Entrada recibida' : 'Listo para recibir'}</h3><p className="mx-auto mt-1 max-w-xs text-[11px] leading-relaxed text-muted-foreground">{done ? 'El proceso externo devolvería aquí el resultado estructurado para confirmar.' : 'Simula una nota de recepción. No se graba audio ni se realiza transcripción real.'}</p>{done && <div className="mt-4 rounded-lg bg-card p-3 text-left"><div className="font-mono-ui text-[9px] uppercase tracking-[.12em] text-accent">Resultado simulado</div><div className="mt-2 text-xs font-semibold">“Paciente adulto con dolor abdominal, ingreso por recepción principal.”</div><Badge className="mt-2 bg-[#e7edf4] text-[#284b68]">Entrada · pendiente de confirmar</Badge></div>}<div className="mt-5 flex justify-center gap-2">{!done ? <Button onClick={() => { setRecording(true); setTimeout(() => { setRecording(false); setDone(true); }, 1100); }} disabled={recording} icon={recording ? LoaderCircle : Mic} testId="button-start-voice">{recording ? 'Capturando...' : 'Iniciar demostración'}</Button> : <Button onClick={() => { onToast({ message: 'Entrada de voz confirmada y enviada a recepción', tone: 'success' }); onClose(); }} icon={Check} testId="button-confirm-voice">Confirmar entrada</Button>}</div></div></Modal>; }
-
-function AppShell() { const [collapsed, setCollapsed] = useState(false); const [registerOpen, setRegisterOpen] = useState(false); const [voiceOpen, setVoiceOpen] = useState(false); const [patient, setPatient] = useState<Patient | null>(null); const [careEpisode, setCareEpisode] = useState<Episode | null>(null); const [toasts, setToasts] = useState<Toast[]>([]); const [patientList, setPatientList] = useState(seedPatients); const toast = (t: Toast) => { setToasts((items) => [...items, t]); setTimeout(() => setToasts((items) => items.slice(1)), 3300); }; const register = (p: Patient) => setPatientList((list) => [p, ...list]); return <div className="mf-shell"><Sidebar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} /><main className={cx('mf-main min-h-[100dvh] transition-[margin] duration-200', collapsed ? 'ml-[76px]' : 'ml-[248px]')}><Topbar onRegister={() => setRegisterOpen(true)} onVoice={() => setVoiceOpen(true)} onToast={toast} /><div className="mx-auto max-w-[1500px] p-5 sm:p-8"><RoutedErrorBoundary><Switch><Route path="/" component={() => <Dashboard onRegister={() => setRegisterOpen(true)} onVoice={() => setVoiceOpen(true)} onToast={toast} onPatient={setPatient} />} /><Route path="/emergencias" component={() => <EmergencyPage onPatient={setPatient} onCare={setCareEpisode} />} /><Route path="/pacientes" component={() => <PatientsPage list={patientList} onPatient={setPatient} onRegister={() => setRegisterOpen(true)} />} /><Route path="/triaje" component={() => <TriagePage onToast={toast} />} /><Route path="/historial-clinico" component={() => <HistoryPage onPatient={setPatient} />} /><Route path="/recursos" component={() => <ResourcesPage onToast={toast} />} /><Route path="/laboratorio" component={() => <LabsPage onToast={toast} />} /><Route path="/farmacia" component={() => <PharmacyPage onToast={toast} />} /><Route path="/ambulancias" component={() => <AmbulancesPage onToast={toast} />} /><Route path="/personal" component={() => <StaffPage onToast={toast} />} /><Route path="/automatizaciones" component={() => <WorkflowsPage onToast={toast} />} /><Route path="/auditoria" component={() => <AuditPage onToast={toast} />} /><Route path="/configuracion" component={() => <ConfigPage onToast={toast} />} /><Route component={NotFound} /></Switch></RoutedErrorBoundary></div></main>{patient && <PatientDrawer patient={patient} onClose={() => setPatient(null)} onCare={() => { const ep = episodes.find((e) => e.patientId === patient.id); if (ep) setCareEpisode(ep); }} />}{careEpisode && <CareModal episode={careEpisode} onClose={() => setCareEpisode(null)} onToast={toast} />}{registerOpen && <RegisterModal onClose={() => setRegisterOpen(false)} onCreated={register} onToast={toast} />}{voiceOpen && <VoiceModal onClose={() => setVoiceOpen(false)} onToast={toast} />}<div className="fixed bottom-5 right-5 z-[60] flex w-[min(360px,calc(100vw-40px))] flex-col gap-2">{toasts.map((t, i) => <div key={`${t.message}-${i}`} data-testid={`status-toast-${i}`} className={cx('mf-fade flex items-center gap-3 rounded-lg border bg-card px-4 py-3 text-xs font-semibold shadow-lg', t.tone === 'warning' ? 'border-[#ecd2a6]' : t.tone === 'success' ? 'border-[#b9e0db]' : 'border-border')}><span className={cx('flex h-6 w-6 items-center justify-center rounded-full', t.tone === 'warning' ? 'bg-[#fff1d8] text-[#a56510]' : 'bg-[#e0f2ee] text-[#14796f]')}><Check size={13} /></span>{t.message}</div>)}</div></div>; }
-
-function RoutedErrorBoundary({ children }: { children: ReactNode }) { const [location] = useLocation(); return <ErrorBoundary resetKey={location}>{children}</ErrorBoundary>; }
-function Router() { return <RoutedErrorBoundary><AppShell /></RoutedErrorBoundary>; }
-function App() { return <QueryClientProvider client={queryClient}><TooltipProvider><WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}><Router /></WouterRouter><Toaster /></TooltipProvider></QueryClientProvider>; }
-export default App;
