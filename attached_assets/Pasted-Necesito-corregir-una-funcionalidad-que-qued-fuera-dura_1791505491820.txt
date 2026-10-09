@@ -1,0 +1,61 @@
+Necesito corregir una funcionalidad que quedó fuera durante el rediseño de MediFlow IA.
+
+En el módulo **Gestión de recursos disponibles**, se eliminó o se dejó fuera la posibilidad de agregar nuevos recursos. Necesito que restaures e implementes esta funcionalidad, manteniendo el diseño actual y todas las funcionalidades que ya existen.
+
+### 1. Agregar recursos
+
+Incluye un botón visible llamado **«Agregar recurso»** en la pantalla de Gestión de recursos.
+
+Al pulsarlo, debe abrir un formulario mediante un modal o una pantalla de creación, siguiendo el estilo visual actual de MediFlow IA.
+
+El formulario debe permitir registrar:
+
+- **Tipo de recurso:** médico, cama o área de atención.
+- **Identificador:** código único del recurso.
+- **Nombre o descripción:** nombre del médico, identificación de la cama o nombre del área de atención.
+- **Estado inicial:** disponible o no disponible.
+- **Observaciones:** campo opcional para información adicional.
+
+Los campos específicos deben adaptarse al tipo de recurso seleccionado. Por ejemplo, para un médico puede solicitarse su nombre y especialidad; para una cama, su código o ubicación; y para un área, su nombre y tipo de atención.
+
+No todos los campos deben ser obligatorios si no son necesarios para el tipo de recurso.
+
+### 2. Validaciones
+
+- No permitir registrar recursos sin los datos obligatorios.
+- Evitar identificadores duplicados.
+- Mostrar mensajes de validación claros.
+- Permitir cancelar la operación sin guardar cambios.
+- Mostrar una confirmación cuando el recurso se registre correctamente.
+
+### 3. Integración con el sistema
+
+Cuando se agregue un recurso, este debe aparecer en la tabla de Gestión de recursos y actualizar los indicadores de disponibilidad correspondientes.
+
+El nuevo recurso también debe estar disponible para las operaciones de asignación a pacientes cuando su tipo y estado lo permitan.
+
+Respeta las reglas existentes de asignación: no permitir asignar recursos no disponibles ni asignar simultáneamente una misma cama o recurso exclusivo a varios pacientes.
+
+Guarda el recurso utilizando el backend y los servicios existentes. Si esta operación todavía no está implementada en el backend, identifica qué hace falta y no simules que se guardó en el servidor.
+
+Si el proyecto utiliza datos de demostración, implementa la creación de recursos dentro de ese modo sin mezclar datos ficticios con datos reales.
+
+### 4. Mantener lo existente
+
+No elimines ni modifiques innecesariamente las funciones actuales de consultar, editar, asignar, actualizar disponibilidad y liberar recursos.
+
+No rehagas el frontend completo. Realiza únicamente los cambios necesarios para recuperar y completar esta funcionalidad, reutilizando los componentes y estilos actuales.
+
+### 5. Verificación
+
+Al terminar, comprueba que sea posible:
+
+1. Abrir el formulario desde «Agregar recurso».
+2. Registrar un médico, una cama y un área de atención.
+3. Validar los campos obligatorios y evitar identificadores duplicados.
+4. Ver el recurso recién creado en la tabla.
+5. Comprobar que los indicadores se actualicen correctamente.
+6. Cancelar el formulario sin crear un recurso.
+7. Mantener funcionando las demás operaciones del módulo.
+
+Implementa los cambios directamente en el proyecto y verifica que no se hayan introducido errores.
