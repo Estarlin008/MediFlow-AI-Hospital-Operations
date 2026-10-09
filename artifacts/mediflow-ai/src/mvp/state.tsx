@@ -20,7 +20,6 @@ import {
 } from '@/data/mock-data';
 import { integrationConfig } from '@/integration/config';
 import type {
-  AreaCapacity,
   AuditEvent,
   Bed,
   DashboardSummary,
@@ -29,7 +28,7 @@ import type {
   TriageResult,
 } from '@/domain/contracts';
 import { hospitalService } from '@/services/hospital';
-import type { MvpDoctor, MvpEpisode, MvpPatient, MvpState } from './types';
+import type { MvpArea, MvpBed, MvpDoctor, MvpEpisode, MvpPatient, MvpState } from './types';
 
 export type MvpAction =
   | { type: 'loading' }
@@ -44,7 +43,10 @@ export type MvpAction =
   | { type: 'assign-bed'; episodeId: string; bedId: string; event: AuditEvent }
   | { type: 'release-bed'; episodeId: string; bedId: string; event: AuditEvent }
   | { type: 'assign-doctor'; episodeId: string; doctorId: string; event: AuditEvent }
-  | { type: 'set-doctor-availability'; doctorId: string; availability: MvpDoctor['availability']; event: AuditEvent };
+  | { type: 'set-doctor-availability'; doctorId: string; availability: MvpDoctor['availability']; event: AuditEvent }
+  | { type: 'add-doctor'; doctor: MvpDoctor; event: AuditEvent }
+  | { type: 'add-bed'; bed: MvpBed; event: AuditEvent }
+  | { type: 'add-area'; area: MvpArea; event: AuditEvent };
 
 const isDemo = integrationConfig.dataSource === 'mock';
 
@@ -69,6 +71,21 @@ function toMvpEpisode(episode: (typeof demoEpisodes)[number]): MvpEpisode {
     priorityNotes: sampleResult
       ? 'Registro estático para mostrar el formato. No se evaluó en tiempo real.'
       : undefined,
+  };
+}
+
+function toMvpArea(area: (typeof demoAreas)[number], index: number): MvpArea {
+  const slug = area.name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+  return {
+    ...area,
+    id: `AREA-${slug || index + 1}`,
+    attentionType: area.name,
+    isAvailable: true,
   };
 }
 
@@ -101,7 +118,7 @@ function initialState(): MvpState {
             ? 'Asignado'
             : 'No disponible',
     })),
-    areas: demoAreas.map((area) => ({ ...area })),
+    areas: demoAreas.map(toMvpArea),
     evaluations: demoEvaluations.map((result) => ({
       ...result,
       source: 'Ejemplo estático de demostración · no es una evaluación en vivo',
@@ -115,6 +132,19 @@ function initialState(): MvpState {
     loading: false,
     loadErrors: [],
   };
+}
+
+function resourceIdExists(state: MvpState, id: string) {
+  const normalized = id.trim().toLocaleUpperCase('es-BO');
+  return [
+    ...state.beds.map((resource) => resource.id),
+    ...state.doctors.map((resource) => resource.id),
+    ...state.areas.map((resource) => resource.id),
+  ].some((existing) => existing.toLocaleUpperCase('es-BO') === normalized);
+}
+
+function normalizeResourceName(name: string) {
+  return name.trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es-BO');
 }
 
 function appendEvent(activity: AuditEvent[], event: AuditEvent) {
@@ -390,6 +420,39 @@ function reducer(state: MvpState, action: MvpAction): MvpState {
         activity: appendEvent(state.activity, action.event),
       };
     }
+    case 'add-doctor':
+      if (!isDemo || resourceIdExists(state, action.doctor.id)) return state;
+      return {
+        ...state,
+        doctors: [action.doctor, ...state.doctors],
+        activity: appendEvent(state.activity, action.event),
+      };
+    case 'add-bed': {
+      if (!isDemo || resourceIdExists(state, action.bed.id)) return state;
+      const area = state.areas.find((item) => item.name === action.bed.area);
+      if (!area || !area.isAvailable) return state;
+      return {
+        ...state,
+        beds: [action.bed, ...state.beds],
+        areas: state.areas.map((item) =>
+          item.name === action.bed.area ? { ...item, total: item.total + 1 } : item,
+        ),
+        activity: appendEvent(state.activity, action.event),
+      };
+    }
+    case 'add-area':
+      if (
+        !isDemo ||
+        resourceIdExists(state, action.area.id) ||
+        state.areas.some((area) => normalizeResourceName(area.name) === normalizeResourceName(action.area.name))
+      ) {
+        return state;
+      }
+      return {
+        ...state,
+        areas: [action.area, ...state.areas],
+        activity: appendEvent(state.activity, action.event),
+      };
     default:
       return state;
   }
@@ -495,8 +558,4 @@ export function createEvent(action: string, detail: string, kind: AuditEvent['ki
     detail,
     kind,
   };
-}
-
-export function toAreaList(areas: AreaCapacity[]) {
-  return areas;
 }

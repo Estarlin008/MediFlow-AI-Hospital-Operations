@@ -57,14 +57,26 @@ export type MvpEpisode = {
 
 export type MvpDoctor = StaffMember & {
   availability: 'Disponible' | 'Asignado' | 'No disponible';
+  observations?: string;
+};
+
+export type MvpBed = Bed & {
+  observations?: string;
+};
+
+export type MvpArea = AreaCapacity & {
+  id: string;
+  attentionType: string;
+  isAvailable: boolean;
+  observations?: string;
 };
 
 export type MvpState = {
   patients: MvpPatient[];
   episodes: MvpEpisode[];
-  beds: Bed[];
+  beds: MvpBed[];
   doctors: MvpDoctor[];
-  areas: AreaCapacity[];
+  areas: MvpArea[];
   evaluations: TriageResult[];
   activity: AuditEvent[];
   dashboardSummary: DashboardSummary | null;
