@@ -1,0 +1,1420 @@
+Quiero que hagas una modificación importante del proyecto actual de MediFlow AI.
+
+NO rehagas el proyecto desde cero.
+
+NO cambies innecesariamente el diseño visual actual.
+
+Quiero que mantengas la identidad visual y la estructura general de MediFlow AI, pero debes corregir un problema fundamental de UX y de concepto:
+
+MediFlow AI no debe sentirse como un sistema hospitalario tradicional donde médicos y enfermeras tienen que llenar muchos formularios manualmente.
+
+El objetivo de MediFlow es precisamente REDUCIR la cantidad de escritura y trabajo administrativo.
+
+Por eso quiero transformar el flujo actual para que el REGISTRO POR VOZ sea una funcionalidad REAL y central de MediFlow.
+
+La idea general debe ser:
+
+PERSONAL HABLA
+        ↓
+MEDIFLOW CAPTURA LA VOZ
+        ↓
+TRANSCRIPCIÓN
+        ↓
+PROCESAMIENTO / ESTRUCTURACIÓN
+        ↓
+n8n
+        ↓
+DATOS ESTRUCTURADOS
+        ↓
+MEDIFLOW LOS PRESENTA
+        ↓
+PROFESIONAL REVISA
+        ↓
+CONFIRMA / CORRIGE
+        ↓
+SE GUARDA EL REGISTRO
+
+El frontend debe prepararse para que n8n sea el motor de procesamiento y automatización.
+
+NO crear un backend tradicional.
+
+NO crear ASP.NET.
+
+NO crear Express.
+
+NO crear FastAPI.
+
+NO crear otro servidor backend.
+
+La integración debe quedar preparada:
+
+REPLIT FRONTEND
+        ↓
+SERVICIOS / API CLIENT
+        ↓
+N8N
+        ↓
+PROCESAMIENTO Y AUTOMATIZACIÓN
+
+==================================================
+1. CAMBIO DE FILOSOFÍA DEL PRODUCTO
+==================================================
+
+MediFlow no debe obligar al personal sanitario a escribir manualmente toda la información.
+
+La interfaz debe priorizar:
+
+- Voz.
+- Captura automática.
+- Transcripción.
+- Extracción de información.
+- Estructuración automática.
+- Revisión humana.
+- Confirmación.
+
+Los formularios manuales deben existir solamente como:
+
+1. Fallback.
+2. Corrección.
+3. Edición.
+4. Información que no pueda obtenerse mediante voz.
+
+NO eliminar completamente la posibilidad de editar.
+
+El médico o enfermera debe poder corregir cualquier dato generado automáticamente.
+
+==================================================
+2. ELIMINAR / REPLANTEAR "SINCRONIZAR"
+==================================================
+
+Actualmente existe un botón:
+
+"Sincronizar"
+
+Este botón no tiene un propósito claro dentro del flujo actual.
+
+Si no existe una fuente externa real que deba sincronizarse, ELIMINARLO de la interfaz principal.
+
+No quiero botones decorativos que aparenten realizar una acción que realmente no existe.
+
+Revisar todas las apariciones del botón "Sincronizar".
+
+Si existe una función técnicamente real detrás de él, documentar exactamente qué sincroniza.
+
+Si solamente actualiza datos mock o recarga la pantalla, sustituirlo por:
+
+"Actualizar"
+
+si realmente corresponde a una actualización.
+
+Pero NO utilizar "Sincronizar" para una simple recarga.
+
+La terminología debe ser clara.
+
+"Actualizar" = volver a consultar información.
+
+"Sincronizar" = intercambiar/igualar información con una fuente externa.
+
+No utilizar "Sincronizar" si no existe esa función.
+
+==================================================
+3. REGISTRO POR VOZ DEBE SER REAL
+==================================================
+
+Actualmente el botón:
+
+"Registro por voz"
+
+aparentemente introduce datos predeterminados cuando se pulsa, pero no realiza realmente un proceso de voz.
+
+Esto debe corregirse.
+
+NO quiero que al pulsar "Registro por voz" simplemente aparezcan pacientes ficticios.
+
+NO quiero que el sistema rellene datos predeterminados fingiendo que fueron obtenidos por voz.
+
+El usuario debe poder realmente:
+
+1. Pulsar "Registro por voz".
+2. Ver que MediFlow está escuchando.
+3. Hablar.
+4. Detener la grabación.
+5. Ver la transcripción.
+6. Procesar la información.
+7. Ver los campos que fueron extraídos.
+8. Revisarlos.
+9. Confirmarlos.
+10. Crear el paciente/episodio.
+
+==================================================
+4. FLUJO DE REGISTRO POR VOZ
+==================================================
+
+Crear un flujo de interfaz como:
+
+REGISTRO POR VOZ
+
+Estado inicial:
+
+"Listo para escuchar"
+
+Botón:
+
+"Comenzar registro"
+
+Al pulsar:
+
+"Escuchando..."
+
+Mostrar:
+
+- Indicador de grabación.
+- Tiempo transcurrido.
+- Botón "Pausar".
+- Botón "Finalizar".
+- Indicador visual de que el micrófono está activo.
+
+NO utilizar una animación falsa que implique que se está grabando si realmente no existe captura de audio.
+
+==================================================
+5. TRANSCRIPCIÓN
+==================================================
+
+Después de terminar la grabación:
+
+mostrar una pantalla o panel:
+
+"Transcripción"
+
+Ejemplo:
+
+"Paciente masculino de 45 años, llega por dolor en el pecho desde hace aproximadamente una hora. Refiere dificultad para respirar. Es alérgico a la penicilina y utiliza salbutamol."
+
+La transcripción debe poder:
+
+- visualizarse,
+- revisarse,
+- editarse,
+- volver a procesarse.
+
+No ocultar completamente la transcripción.
+
+El profesional debe poder verificar qué entendió el sistema.
+
+==================================================
+6. EXTRACCIÓN AUTOMÁTICA
+==================================================
+
+Después de obtener la transcripción, preparar el flujo para enviar la información a n8n.
+
+Conceptualmente:
+
+Audio / Transcripción
+        ↓
+n8n
+        ↓
+Procesamiento
+        ↓
+Información estructurada
+
+La respuesta podría contener conceptualmente:
+
+{
+  "patient": {
+    "name": "...",
+    "age": 45,
+    "sex": "M"
+  },
+  "complaint": "...",
+  "symptoms": [],
+  "allergies": [],
+  "medicalHistory": [],
+  "medications": [],
+  "observations": "..."
+}
+
+NO es obligatorio utilizar exactamente esta estructura.
+
+Lo importante es que exista un contrato de datos claro.
+
+==================================================
+7. NO INVENTAR DATOS
+==================================================
+
+Esta regla es CRÍTICA.
+
+Si el usuario dice:
+
+"Paciente de 45 años con dolor torácico"
+
+NO completar automáticamente:
+
+- presión arterial,
+- frecuencia cardíaca,
+- saturación,
+- temperatura,
+- alergias,
+
+si esos datos no fueron mencionados.
+
+Mostrar:
+
+"Información no proporcionada"
+
+o dejar el campo vacío.
+
+NO inventar información clínica.
+
+NO rellenar valores ficticios.
+
+NO utilizar datos demo en una operación que el usuario inició mediante voz.
+
+==================================================
+8. CONFIRMACIÓN HUMANA
+==================================================
+
+Después de procesar la voz, mostrar:
+
+"Información detectada"
+
+y presentar tarjetas/campos:
+
+Paciente
+Nombre: Juan Pérez
+Edad: 45
+Sexo: Masculino
+
+Motivo de consulta
+Dolor torácico
+
+Síntomas
+Dificultad respiratoria
+
+Alergias
+Penicilina
+
+Antecedentes
+No mencionados
+
+Medicamentos
+Salbutamol
+
+El profesional debe poder:
+
+- Editar.
+- Corregir.
+- Eliminar.
+- Añadir.
+
+Y finalmente:
+
+"Confirmar registro"
+
+NO guardar información clínica automáticamente sin permitir revisión humana.
+
+==================================================
+9. CREACIÓN DEL PACIENTE
+==================================================
+
+Cuando el profesional pulse:
+
+"Confirmar registro"
+
+el frontend debe enviar la información estructurada al servicio correspondiente.
+
+Conceptualmente:
+
+Voice Registration
+        ↓
+Structured Patient Data
+        ↓
+createPatient()
+        ↓
+n8n
+
+El componente de interfaz NO debe hacer directamente la llamada HTTP.
+
+Debe utilizar:
+
+UI
+↓
+Service
+↓
+API Client
+↓
+n8n
+
+==================================================
+10. CREACIÓN DEL EPISODIO
+==================================================
+
+Después de confirmar el registro:
+
+Crear/iniciar el episodio de emergencia.
+
+El usuario debería recibir una confirmación clara:
+
+"Paciente registrado"
+
+" Episodio de emergencia creado"
+
+"Paciente enviado a triaje"
+
+Esto debe ser un flujo continuo.
+
+NO obligar al usuario a volver al menú y crear manualmente el episodio.
+
+==================================================
+11. REGISTRO DE SIGNOS VITALES POR VOZ
+==================================================
+
+El sistema debe prepararse para que también se puedan capturar signos vitales mediante voz.
+
+Ejemplo de lo que podría decir una enfermera:
+
+"Frecuencia cardíaca 112, presión 148 sobre 92, saturación 91%, temperatura 37.8."
+
+El sistema debe poder estructurar:
+
+FC: 112
+PA: 148/92
+SpO2: 91%
+Temperatura: 37.8 °C
+
+Pero:
+
+NO inventar valores que no hayan sido pronunciados.
+
+Si falta un valor:
+
+"Sin registrar"
+
+==================================================
+12. TRIAJE Y VOZ
+==================================================
+
+La voz NO debe determinar por sí misma la prioridad clínica.
+
+El flujo debe ser:
+
+Profesional habla
+        ↓
+Transcripción
+        ↓
+Datos estructurados
+        ↓
+n8n
+        ↓
+Proceso de triaje
+        ↓
+Resultado
+        ↓
+MediFlow
+
+n8n podrá posteriormente ejecutar las reglas de triaje.
+
+El frontend solamente presenta el resultado.
+
+Por ejemplo:
+
+PRIORIDAD P1
+Crítica
+
+Razón:
+Saturación de oxígeno registrada por debajo del umbral configurado.
+
+IMPORTANTE:
+
+No implementar reglas clínicas duplicadas dentro del frontend.
+
+==================================================
+13. REEVALUACIÓN POR VOZ
+==================================================
+
+La misma idea debe poder utilizarse para reevaluar pacientes.
+
+Ejemplo:
+
+"Paciente Juan Pérez. Saturación 88%, frecuencia cardíaca 124. Refiere mayor dificultad respiratoria."
+
+El sistema debe:
+
+1. Capturar voz.
+2. Transcribir.
+3. Extraer información.
+4. Mostrar la información detectada.
+5. Permitir confirmación.
+6. Enviar a n8n.
+7. Recibir la nueva evaluación.
+8. Actualizar el episodio.
+9. Actualizar la cola.
+10. Mostrar cualquier alerta generada.
+
+==================================================
+14. REGISTRO DE ATENCIÓN MÉDICA POR VOZ
+==================================================
+
+Esta es una funcionalidad MUY IMPORTANTE.
+
+No quiero que el médico tenga que escribir manualmente toda la consulta.
+
+Debe existir un flujo preparado para:
+
+Médico inicia registro por voz.
+
+El médico puede hablar naturalmente:
+
+"Paciente masculino de 45 años que consulta por dolor torácico de una hora de evolución. Presenta frecuencia cardíaca de 110 y presión arterial de 150 sobre 95. Refiere dificultad respiratoria. Se realiza evaluación física..."
+
+La interfaz debe poder:
+
+- Grabar.
+- Transcribir.
+- Mostrar transcripción.
+- Procesar.
+- Extraer información.
+- Presentar borrador clínico.
+- Permitir corrección.
+- Confirmar.
+
+==================================================
+15. DOCUMENTACIÓN CLÍNICA AUTOMÁTICA
+==================================================
+
+Preparar la interfaz para que n8n pueda devolver información estructurada como:
+
+Motivo de consulta
+Hallazgos
+Evaluación
+Diagnóstico registrado por el médico
+Tratamiento
+Medicamentos
+Estudios solicitados
+Observaciones
+Plan
+
+El sistema debe mostrar esto como:
+
+"BORRADOR GENERADO"
+
+NO presentarlo como diagnóstico médico automático.
+
+El médico debe revisar y confirmar.
+
+==================================================
+16. NO HACER DIAGNÓSTICO AUTÓNOMO
+==================================================
+
+MUY IMPORTANTE.
+
+No quiero que el frontend diga:
+
+"La IA diagnosticó..."
+
+ni:
+
+"Diagnóstico automático: ..."
+
+La funcionalidad debe ser:
+
+"Información estructurada"
+
+"Resumen clínico"
+
+"Borrador para revisión"
+
+"El contenido debe ser revisado y confirmado por el profesional sanitario."
+
+El diagnóstico definitivo pertenece al profesional.
+
+==================================================
+17. COPILOTO MÉDICO
+==================================================
+
+El concepto de "Copiloto Médico" debe quedar mejor representado.
+
+Al abrir un paciente, el médico debe recibir un resumen de la información relevante.
+
+Por ejemplo:
+
+RESUMEN CLÍNICO
+
+Paciente:
+45 años · Masculino
+
+Motivo:
+Dolor torácico
+
+Signos relevantes:
+FC 110
+PA 150/95
+SpO2 91%
+
+Alergias:
+Penicilina
+
+Medicamentos:
+Salbutamol
+
+Prioridad:
+P2 — Urgente
+
+El resumen debe poder venir de n8n.
+
+Preparar:
+
+getClinicalSummary()
+
+No generar el resumen mediante datos escritos manualmente dentro del componente.
+
+==================================================
+18. ELIMINAR FORMULARIOS INNECESARIOS
+==================================================
+
+Auditar los formularios actuales.
+
+La pregunta debe ser:
+
+"¿Realmente el profesional necesita escribir esto?"
+
+Si un dato puede obtenerse mediante voz, debe poder existir una alternativa de voz.
+
+NO eliminar información necesaria.
+
+Pero sí reducir la cantidad de escritura manual.
+
+Los formularios deben utilizarse principalmente para:
+
+- Correcciones.
+- Datos faltantes.
+- Confirmaciones.
+- Información que no fue capturada por voz.
+
+==================================================
+19. NUEVO PACIENTE
+==================================================
+
+El botón:
+
+"Nuevo paciente"
+
+NO debe obligar inmediatamente a abrir un formulario enorme.
+
+Al pulsarlo, mostrar opciones:
+
+--------------------------------
+
+¿Cómo deseas registrar al paciente?
+
+🎙️ Registro por voz
+"Hablar para registrar información"
+
+📝 Registro manual
+"Introducir información manualmente"
+
+--------------------------------
+
+La opción principal debe ser:
+
+🎙️ Registro por voz
+
+La opción manual debe permanecer como alternativa.
+
+==================================================
+20. REGISTRO POR VOZ DESDE CUALQUIER PARTE
+==================================================
+
+El botón superior:
+
+"Registro por voz"
+
+debe abrir el flujo de voz global.
+
+Debe funcionar de forma coherente desde:
+
+- Dashboard.
+- Pacientes.
+- Emergencias.
+- Triaje.
+- Historial clínico.
+
+No crear cuatro sistemas de voz diferentes.
+
+Utilizar un componente/flujo reutilizable.
+
+==================================================
+21. ESTADOS DE VOZ
+==================================================
+
+La interfaz debe diferenciar claramente:
+
+IDLE
+"Listo para escuchar"
+
+LISTENING
+"Escuchando..."
+
+PROCESSING
+"Procesando información..."
+
+TRANSCRIBING
+"Transcribiendo..."
+
+REVIEW
+"Revisar información"
+
+CONFIRMING
+"Guardando..."
+
+SUCCESS
+"Registro completado"
+
+ERROR
+"No se pudo procesar el registro"
+
+No simular estados.
+
+Si el navegador no permite acceder al micrófono:
+
+mostrar un error claro.
+
+==================================================
+22. PERMISOS DE MICRÓFONO
+==================================================
+
+Implementar correctamente la solicitud de permiso del micrófono.
+
+Si el usuario no concede permiso:
+
+mostrar:
+
+"Para utilizar el registro por voz, MediFlow necesita acceso al micrófono."
+
+No mostrar datos falsos.
+
+No generar una transcripción ficticia.
+
+==================================================
+23. COMPATIBILIDAD CON EL FUTURO BACKEND N8N
+==================================================
+
+El frontend debe quedar preparado para:
+
+POST /voice/transcription
+
+POST /voice/process
+
+POST /patients
+
+POST /triage
+
+POST /triage/reevaluate
+
+POST /clinical/encounter
+
+POST /clinical/process
+
+GET /clinical/summary
+
+GET /emergency/queue
+
+etc.
+
+Estos nombres son CONCEPTUALES.
+
+NO asumir que estas serán las URLs finales.
+
+Crear una configuración central para que posteriormente podamos conectar los Webhooks reales de n8n.
+
+==================================================
+24. CAPA DE SERVICIOS
+==================================================
+
+NO hacer fetch directamente dentro de los componentes.
+
+Crear una capa de servicios.
+
+Conceptualmente:
+
+services/
+
+voiceService
+patientService
+triageService
+clinicalService
+emergencyService
+bedService
+dashboardService
+reportService
+auditService
+
+Cada servicio debe comunicarse con el API client.
+
+Ejemplo conceptual:
+
+startVoiceSession()
+
+stopVoiceSession()
+
+processTranscript()
+
+createPatient()
+
+createEmergencyEpisode()
+
+submitTriage()
+
+reevaluateTriage()
+
+getClinicalSummary()
+
+saveMedicalAttention()
+
+generateDischargeReport()
+
+No es obligatorio utilizar exactamente estos nombres.
+
+==================================================
+25. MOCK
+==================================================
+
+Mientras n8n no esté conectado:
+
+el frontend puede funcionar con mock.
+
+PERO el flujo de voz NO debe fingir que grabó una conversación real.
+
+Si el reconocimiento de voz real está disponible en el navegador, utilizarlo.
+
+Si el procesamiento posterior todavía no está conectado a n8n:
+
+mostrar claramente:
+
+"Procesamiento de IA pendiente de conexión"
+
+y permitir continuar con datos de prueba SOLO si el usuario explícitamente selecciona:
+
+"Usar demostración"
+
+No insertar automáticamente pacientes ficticios al pulsar Registro por voz.
+
+==================================================
+26. DEMO DE VOZ
+==================================================
+
+Crear una opción separada para demostración:
+
+"Probar con ejemplo"
+
+Esto puede cargar una transcripción preparada.
+
+Pero debe estar claramente separada del flujo real.
+
+Ejemplo:
+
+REGISTRO REAL
+"Comenzar registro"
+
+DEMO
+"Usar ejemplo"
+
+NO mezclar ambos.
+
+==================================================
+27. EXPERIENCIA DEL MÉDICO
+==================================================
+
+Quiero que la experiencia del médico sea:
+
+ABRIR PACIENTE
+        ↓
+VER RESUMEN
+        ↓
+ESCUCHAR / HABLAR
+        ↓
+MEDIFLOW TRANSCRIBE
+        ↓
+INFORMACIÓN ESTRUCTURADA
+        ↓
+REVISAR
+        ↓
+CONFIRMAR
+        ↓
+REGISTRO CLÍNICO
+
+El médico no debería tener que navegar por 5 pantallas para documentar una consulta.
+
+==================================================
+28. EXPERIENCIA DE ENFERMERÍA / TRIAJE
+==================================================
+
+La experiencia debe ser:
+
+REGISTRAR PACIENTE
+        ↓
+VOZ
+        ↓
+DATOS DEL PACIENTE
+        ↓
+SIGNOS VITALES
+        ↓
+SÍNTOMAS
+        ↓
+CONFIRMAR
+        ↓
+TRIAJE
+        ↓
+COLA
+
+Reducir al mínimo la escritura manual.
+
+==================================================
+29. ALERTAS
+==================================================
+
+Las alertas deben continuar funcionando como parte del flujo.
+
+Ejemplo:
+
+n8n procesa la información.
+
+↓
+
+Se genera prioridad.
+
+↓
+
+MediFlow recibe:
+
+P1 / Crítica
+
+↓
+
+La cola se actualiza.
+
+↓
+
+Si corresponde:
+
+ALERTA CRÍTICA
+
+El frontend solamente presenta la información recibida.
+
+==================================================
+30. DASHBOARD
+==================================================
+
+El dashboard debe reflejar los cambios producidos por los procesos.
+
+Ejemplo:
+
+Se registra paciente por voz.
+
+↓
+
+Pacientes hoy +1
+
+↓
+
+Se crea episodio.
+
+↓
+
+En emergencia +1
+
+↓
+
+Se procesa triaje.
+
+↓
+
+Paciente aparece en cola.
+
+↓
+
+Se asigna cama.
+
+↓
+
+Camas disponibles -1
+
+No dejar estos números independientes y hardcodeados en diferentes componentes.
+
+==================================================
+31. "SINCRONIZAR" EN DASHBOARD
+==================================================
+
+Revisar específicamente el botón:
+
+"Sincronizar"
+
+que aparece en el resumen operativo.
+
+Si solamente recarga información, cambiarlo por:
+
+"Actualizar"
+
+Si realmente queremos sincronizar con n8n, no utilizar esa palabra hasta que exista un proceso real de sincronización.
+
+La interfaz debe explicar claramente la acción.
+
+==================================================
+32. BOTÓN REGISTRO POR VOZ
+==================================================
+
+El botón superior:
+
+"Registro por voz"
+
+debe convertirse en una función importante del sistema.
+
+Debe abrir una experiencia profesional, no un simple modal con datos precargados.
+
+Debe incluir:
+
+- Micrófono.
+- Estado.
+- Transcripción.
+- Procesamiento.
+- Datos detectados.
+- Corrección.
+- Confirmación.
+
+==================================================
+33. DISEÑO DEL MODAL / PANEL DE VOZ
+==================================================
+
+Mantener el estilo visual actual.
+
+Crear una interfaz profesional.
+
+Estructura sugerida:
+
+-------------------------------------
+
+REGISTRO POR VOZ
+
+Registrar información sin escribir.
+
+[ Estado del micrófono ]
+
+🎙️
+
+"Listo para escuchar"
+
+[ Comenzar registro ]
+
+-------------------------------------
+
+Después:
+
+"Escuchando..."
+
+[ Indicador ]
+
+00:17
+
+[ Pausar ] [ Finalizar ]
+
+-------------------------------------
+
+Después:
+
+TRANSCRIPCIÓN
+
+"Paciente masculino de 45 años..."
+
+[Editar transcripción]
+
+-------------------------------------
+
+INFORMACIÓN DETECTADA
+
+Paciente
+Edad
+Sexo
+Motivo
+Síntomas
+Alergias
+Antecedentes
+Medicamentos
+Signos vitales
+
+[Editar]
+
+-------------------------------------
+
+[ Cancelar ] [ Confirmar registro ]
+
+-------------------------------------
+
+==================================================
+34. ACCESIBILIDAD
+==================================================
+
+El flujo de voz debe tener una alternativa visual/manual.
+
+Nunca asumir que el micrófono estará disponible.
+
+Debe existir:
+
+"Introducir manualmente"
+
+como fallback.
+
+Pero NO hacer que el formulario manual sea el flujo principal.
+
+==================================================
+35. INFORMACIÓN SENSIBLE
+==================================================
+
+No guardar audio en frontend permanentemente.
+
+No almacenar grabaciones clínicas en localStorage.
+
+No imprimir transcripciones sensibles en consola.
+
+No colocar credenciales de n8n en el frontend.
+
+La futura gestión de audio/datos deberá realizarse mediante el flujo apropiado de n8n.
+
+==================================================
+36. NO IMPLEMENTAR IA FALSA
+==================================================
+
+NO mostrar:
+
+"IA analizando..."
+
+si realmente no existe ningún procesamiento.
+
+NO generar texto aleatorio.
+
+NO insertar pacientes aleatorios.
+
+NO inventar diagnósticos.
+
+NO inventar signos vitales.
+
+NO fingir una conexión con n8n.
+
+Si una parte todavía no está conectada, indicar claramente:
+
+"Pendiente de integración con n8n."
+
+==================================================
+37. REVISAR LAS PANTALLAS EXISTENTES
+==================================================
+
+Auditar especialmente:
+
+Dashboard
+Emergencias
+Pacientes
+Triaje
+Historial clínico
+Recursos
+Laboratorio
+Farmacia
+Ambulancias
+Personal
+Automatizaciones
+Auditoría
+
+Revisar cómo encaja el nuevo flujo de voz en cada una.
+
+==================================================
+38. CONSISTENCIA
+==================================================
+
+El paciente creado por voz debe aparecer posteriormente en:
+
+Pacientes
+Emergencias
+Triaje
+Historial clínico
+Dashboard
+
+No crear diferentes objetos mock para cada pantalla.
+
+Debe existir un modelo de datos consistente.
+
+==================================================
+39. FLUJO COMPLETO QUE QUIERO PODER DEMOSTRAR
+==================================================
+
+Al terminar esta modificación, quiero poder demostrar algo similar a:
+
+1. Entrar a MediFlow.
+
+2. Pulsar "Nuevo paciente".
+
+3. Seleccionar "Registro por voz".
+
+4. MediFlow solicita acceso al micrófono.
+
+5. El usuario habla.
+
+Ejemplo:
+
+"Paciente masculino de 45 años, llega por dolor torácico. Tiene dificultad respiratoria. Es alérgico a la penicilina y utiliza salbutamol."
+
+6. MediFlow muestra la transcripción.
+
+7. MediFlow muestra la información detectada.
+
+8. El usuario revisa.
+
+9. El usuario confirma.
+
+10. Se crea el paciente.
+
+11. Se crea el episodio de emergencia.
+
+12. El paciente aparece en triaje.
+
+13. Se registran los signos vitales por voz.
+
+Ejemplo:
+
+"Frecuencia cardíaca 112, presión 148 sobre 92, saturación 91%, temperatura 37.8."
+
+14. Se confirma.
+
+15. La información se envía al proceso correspondiente.
+
+16. n8n podrá posteriormente procesarla.
+
+17. MediFlow recibe el resultado del triaje.
+
+18. Se muestra:
+
+P2 — Urgente
+
+19. Se muestra la razón.
+
+20. El paciente aparece en la cola.
+
+21. El médico abre el paciente.
+
+22. Ve el resumen clínico.
+
+23. El médico puede registrar la consulta mediante voz.
+
+24. Se genera una transcripción.
+
+25. Se genera información estructurada.
+
+26. El médico revisa.
+
+27. Confirma.
+
+28. Se actualiza el episodio.
+
+29. Se puede asignar cama.
+
+30. Se puede dar de alta.
+
+31. Se genera el informe.
+
+32. El dashboard refleja todo.
+
+==================================================
+40. PRINCIPIO DE DISEÑO FINAL
+==================================================
+
+MediFlow debe seguir este principio:
+
+"Hablar primero, revisar después, escribir solo cuando sea necesario."
+
+La aplicación no debe convertirse en:
+
+"Escribir todo y luego usar IA."
+
+Debe convertirse en:
+
+"Hablar → estructurar → revisar → confirmar."
+
+==================================================
+41. NO CAMBIAR EL OBJETIVO DEL PRODUCTO
+==================================================
+
+MediFlow sigue siendo una plataforma de gestión de emergencias.
+
+El registro por voz NO es un producto independiente.
+
+La voz es una interfaz para hacer más eficiente:
+
+- Registro del paciente.
+- Triaje.
+- Reevaluación.
+- Atención médica.
+- Documentación.
+
+==================================================
+42. PREPARACIÓN PARA N8N
+==================================================
+
+Todo lo relacionado con:
+
+- Transcripción procesada.
+- Extracción de datos.
+- Clasificación.
+- Alertas.
+- Resumen clínico.
+- Procesamiento de consulta.
+- Generación de documentos.
+- Automatizaciones.
+
+debe quedar preparado para integrarse posteriormente con n8n.
+
+No implementar estas lógicas duplicadas dentro del frontend.
+
+==================================================
+43. DOCUMENTACIÓN
+==================================================
+
+Actualizar:
+
+N8N_INTEGRATION.md
+
+Incluir una sección:
+
+VOICE WORKFLOW
+
+con:
+
+1. Qué envía el frontend.
+2. Qué espera recibir.
+3. Qué debe procesar n8n.
+4. Qué respuesta debe devolver.
+5. Estados de procesamiento.
+6. Manejo de errores.
+
+También documentar:
+
+PATIENT REGISTRATION
+TRIAGE
+TRIAGE REEVALUATION
+CLINICAL VOICE
+CLINICAL SUMMARY
+DISCHARGE
+ALERTS
+
+==================================================
+44. PRUEBAS
+==================================================
+
+Probar:
+
+[ ] Micrófono permitido.
+
+[ ] Micrófono denegado.
+
+[ ] Comenzar grabación.
+
+[ ] Pausar.
+
+[ ] Finalizar.
+
+[ ] Transcripción.
+
+[ ] Edición de transcripción.
+
+[ ] Extracción de datos.
+
+[ ] Corrección de datos.
+
+[ ] Confirmación.
+
+[ ] Cancelación.
+
+[ ] Error de procesamiento.
+
+[ ] Error de red.
+
+[ ] n8n no disponible.
+
+[ ] Modo mock.
+
+[ ] Registro manual como fallback.
+
+[ ] Creación de paciente.
+
+[ ] Creación de episodio.
+
+[ ] Triaje.
+
+[ ] Reevaluación.
+
+[ ] Resumen clínico.
+
+[ ] Registro médico.
+
+[ ] Dashboard actualizado.
+
+==================================================
+45. RESULTADO ESPERADO
+==================================================
+
+No quiero simplemente una nueva ventana de voz.
+
+Quiero que cambies el flujo de interacción de MediFlow para que la voz se convierta realmente en una parte funcional del producto.
+
+Actualmente:
+
+BOTÓN VOZ
+↓
+DATOS PREDETERMINADOS
+↓
+FIN
+
+Eso NO es aceptable.
+
+Quiero:
+
+BOTÓN VOZ
+↓
+MICRÓFONO REAL
+↓
+CAPTURA
+↓
+TRANSCRIPCIÓN
+↓
+ESTRUCTURACIÓN
+↓
+REVISIÓN
+↓
+CONFIRMACIÓN
+↓
+PACIENTE / EPISODIO / TRIAJE / ATENCIÓN
+↓
+N8N
+
+El resultado debe ser una experiencia que demuestre claramente el valor de MediFlow AI:
+
+REDUCIR LA ESCRITURA
+REDUCIR EL TRABAJO ADMINISTRATIVO
+ACELERAR EL REGISTRO
+FACILITAR EL TRABAJO DEL PERSONAL SANITARIO
+CENTRALIZAR LA INFORMACIÓN
+MANTENER AL PROFESIONAL EN CONTROL
+
+Al terminar:
+
+1. Corrige todos los errores encontrados.
+2. Elimina el botón "Sincronizar" donde no tenga una función real.
+3. Reemplázalo por "Actualizar" solamente cuando corresponda.
+4. Convierte "Registro por voz" en una funcionalidad real.
+5. Elimina los datos ficticios automáticos que actualmente aparecen al pulsarlo.
+6. Mantén el registro manual como fallback.
+7. Prepara la capa de servicios para n8n.
+8. No construyas otro backend.
+9. No inventes IA.
+10. No inventes diagnósticos.
+11. No inventes datos clínicos.
+12. Mantén el diseño visual actual.
+13. Mantén la navegación.
+14. Corrige inconsistencias entre pantallas.
+15. Actualiza N8N_INTEGRATION.md.
+16. Explica al finalizar exactamente qué cambiaste y qué partes todavía requieren el workflow real de n8n.

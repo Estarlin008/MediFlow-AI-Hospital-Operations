@@ -1,0 +1,535 @@
+# PROMPT PARA REPLIT: REDISEÑO COMPLETO DEL FRONTEND DE MEDIFLOW IA
+
+## 1. CONTEXTO Y OBJETIVO
+
+Estás trabajando en el proyecto existente **MediFlow IA**, un sistema de apoyo a la gestión del flujo de pacientes en un servicio de emergencias hospitalarias, con asistencia de inteligencia artificial para la clasificación de prioridad clínica.
+
+Necesito que realices una **reestructuración y un rediseño completo del frontend existente**, adaptándolo a las funcionalidades definitivas del MVP.
+
+No quiero una simple modificación de colores, tarjetas o estilos. Quiero que reorganices la interfaz, la navegación, las pantallas, los formularios, las tablas, los indicadores y los flujos de interacción para que el sistema tenga una apariencia profesional, sea intuitivo y represente un producto de software sanitario real.
+
+### Antes de modificar el código
+
+1. Inspecciona la estructura actual del proyecto, sus componentes, rutas, estilos, librerías y tecnologías.
+2. Identifica las pantallas que existen actualmente y determina cuáles deben modificarse, reutilizarse o sustituirse.
+3. Revisa cómo está conectado el frontend con el backend, los servicios de IA y las API existentes.
+4. Conserva las tecnologías, dependencias y funcionalidades que ya funcionen correctamente.
+5. No elimines ni reemplaces funcionalidades existentes que sean necesarias sin verificar primero su propósito.
+
+Después de esta inspección, implementa los cambios directamente en el proyecto. No te limites a presentar una propuesta de diseño.
+
+## 2. FUNCIONALIDADES DEFINITIVAS DEL MVP
+
+El sistema debe organizarse alrededor de estas seis funcionalidades:
+
+1. Registro de pacientes.
+2. Clasificación de prioridad con inteligencia artificial.
+3. Gestión de la cola de atención.
+4. Reevaluación del paciente.
+5. Gestión de recursos disponibles.
+6. Panel de seguimiento e indicadores.
+
+Toda la interfaz debe responder a estas funcionalidades. No agregues módulos ajenos al alcance del MVP, como facturación, farmacia, inventario de medicamentos, expedientes clínicos completos o administración hospitalaria general.
+
+## 3. DISEÑO VISUAL Y EXPERIENCIA DE USUARIO
+
+Diseña una interfaz moderna, profesional y sobria, propia de una plataforma sanitaria utilizada por médicos, enfermeros y personal de admisión.
+
+### Estilo visual
+
+- Apariencia de aplicación SaaS profesional.
+- Fondo general gris muy claro o blanco.
+- Azul oscuro o azul petróleo como color principal.
+- Tonos neutros para superficies, tablas y formularios.
+- Colores semánticos para los niveles de prioridad clínica.
+- Tipografía legible y jerarquía visual clara.
+- Tarjetas con bordes sutiles, sombras discretas y espaciado consistente.
+- Iconografía coherente y profesional.
+- Tablas ordenadas, formularios claros y gráficos fáciles de interpretar.
+- Diseño responsive para computadoras, tabletas y móviles.
+
+Evita el exceso de degradados, animaciones, efectos decorativos, tarjetas innecesarias y elementos visuales que distraigan al personal sanitario.
+
+La prioridad es que la información importante pueda identificarse rápidamente durante una jornada de emergencias.
+
+### Identidad visual
+
+Utiliza el nombre **MediFlow IA** en el encabezado o menú lateral.
+
+Si el proyecto ya cuenta con un logotipo, reutilízalo. Si no existe, utiliza una identidad tipográfica sencilla acompañada de un icono sanitario apropiado.
+
+### Navegación principal
+
+Implementa un menú lateral persistente en escritorio, con las siguientes secciones:
+
+- Panel de control.
+- Registro de pacientes.
+- Cola de atención.
+- Reevaluación.
+- Recursos disponibles.
+
+La sección de pacientes debe permitir acceder al registro y a la información operativa de cada paciente sin crear módulos redundantes.
+
+En la parte inferior del menú, muestra el usuario autenticado y las opciones de sesión disponibles, respetando el sistema de autenticación existente.
+
+En dispositivos móviles, transforma el menú lateral en una navegación compacta y accesible.
+
+## 4. PANTALLA 1: PANEL DE CONTROL
+
+Esta será la pantalla inicial después de iniciar sesión.
+
+Debe permitir conocer rápidamente la situación actual del servicio de emergencias.
+
+### Indicadores principales
+
+Muestra tarjetas con los siguientes indicadores:
+
+- Pacientes en espera.
+- Pacientes en atención.
+- Pacientes atendidos durante el período seleccionado.
+- Pacientes que requieren atención inmediata.
+- Tiempo de espera promedio.
+- Ocupación de los recursos disponibles.
+
+Cada indicador debe tener un título claro, un valor destacado y, cuando sea pertinente, una descripción complementaria.
+
+### Visualizaciones
+
+Incluye gráficos útiles para la operación:
+
+1. Distribución de pacientes por nivel de prioridad.
+2. Evolución de los tiempos de espera.
+3. Estado de ocupación de médicos, camas y áreas de atención.
+
+Añade filtros temporales cuando los datos disponibles lo permitan, por ejemplo, turno actual, últimas 24 horas o período seleccionado.
+
+### Lista de atención prioritaria
+
+Incluye una sección denominada «Atención prioritaria» con los pacientes que necesitan revisión urgente según su clasificación vigente.
+
+Cada fila debe mostrar:
+
+- Identificador del paciente.
+- Nivel de prioridad.
+- Motivo de consulta resumido.
+- Tiempo de espera.
+- Estado actual.
+- Advertencias relevantes.
+- Acción para consultar su información.
+
+Los casos que requieren atención inmediata deben destacar claramente sin depender únicamente del color.
+
+### Actividad reciente
+
+Si existen datos disponibles, muestra los eventos operativos recientes, como nuevas admisiones, cambios de prioridad, reevaluaciones y asignaciones de recursos.
+
+El panel debe utilizar datos reales del sistema. Si todavía no existe una integración funcional, utiliza datos de demostración claramente identificados.
+
+## 5. PANTALLA 2: REGISTRO DE PACIENTES
+
+Crea una pantalla específica para registrar la llegada de un paciente.
+
+El formulario debe estar dividido en secciones para facilitar su comprensión.
+
+### A. Identificación
+
+Campos:
+
+- Tipo de identificación.
+- Número de identificación, cuando esté disponible.
+- Nombre y apellidos, según las necesidades del proyecto.
+- Edad o fecha de nacimiento.
+- Sexo, cuando corresponda al protocolo y a los datos requeridos.
+- Identificador interno del paciente.
+
+No obligues a introducir información que no sea necesaria para completar el registro inicial. Cuando un dato sea desconocido, permite indicarlo explícitamente.
+
+### B. Datos de ingreso
+
+Campos:
+
+- Fecha y hora de llegada, generadas automáticamente.
+- Motivo de consulta.
+- Descripción inicial de los síntomas.
+- Tiempo de evolución de los síntomas, cuando se conozca.
+- Antecedentes relevantes disponibles.
+- Alergias relevantes, si se conocen.
+
+### C. Signos vitales
+
+Incluye campos adecuados para registrar los signos vitales requeridos por el protocolo de triaje, por ejemplo:
+
+- Frecuencia cardíaca.
+- Presión arterial.
+- Frecuencia respiratoria.
+- Temperatura.
+- Saturación de oxígeno.
+- Nivel de conciencia.
+- Otros parámetros requeridos por el protocolo configurado.
+
+Valida los formatos, las unidades y los valores introducidos. No conviertas automáticamente valores ausentes en valores normales.
+
+### D. Acciones del formulario
+
+Incluye botones para:
+
+- Guardar registro.
+- Cancelar.
+- Limpiar formulario, cuando proceda.
+
+Al guardar correctamente, muestra una confirmación y permite acceder a la evaluación inicial del paciente.
+
+El paciente registrado debe aparecer en la cola de atención con su estado correspondiente y los datos de ingreso vinculados.
+
+No permitas crear registros duplicados por errores evidentes de navegación o por envíos repetidos del formulario.
+
+## 6. PANTALLA 3: CLASIFICACIÓN DE PRIORIDAD CON IA
+
+Esta funcionalidad debe estar integrada en el flujo de registro y también debe poder consultarse posteriormente desde la información del paciente.
+
+Diseña una interfaz que permita revisar la clasificación propuesta por la inteligencia artificial.
+
+### Información mostrada
+
+- Identificador del paciente.
+- Motivo de consulta.
+- Síntomas registrados.
+- Signos vitales disponibles.
+- Antecedentes relevantes.
+- Información faltante.
+- Nivel de prioridad propuesto.
+- Explicación breve de la clasificación.
+- Fecha y hora de la evaluación.
+- Estado de la evaluación.
+
+### Resultado de la IA
+
+La clasificación debe presentarse en un panel visual destacado.
+
+Muestra el nivel de prioridad utilizando las categorías y los colores definidos por el protocolo de triaje configurado en el proyecto.
+
+Si todavía no existe un protocolo definido, no inventes uno como si fuera oficial. Prepara la interfaz para utilizar categorías configurables y señala que la correspondencia clínica debe definirse y validarse.
+
+La respuesta de la IA debe mostrar:
+
+1. Prioridad propuesta.
+2. Motivos principales de la propuesta.
+3. Datos que sustentan la clasificación.
+4. Información faltante o inconsistente.
+5. Alertas o señales de riesgo identificadas.
+6. Fecha y estado de la evaluación.
+
+### Acciones disponibles
+
+- Revisar resultado.
+- Confirmar o registrar la decisión del profesional sanitario.
+- Solicitar una nueva evaluación cuando corresponda.
+- Consultar evaluaciones anteriores, si existen.
+
+La interfaz debe distinguir claramente entre la recomendación de la IA y la decisión del profesional sanitario.
+
+No presentes la recomendación de la IA como un diagnóstico definitivo ni permitas que una respuesta incompleta se interprete como una clasificación clínica válida.
+
+Si la IA no está conectada, muestra un estado informativo como «Evaluación no disponible» y una opción de reintento cuando sea posible. No simules que la IA ha evaluado a un paciente cuando no lo ha hecho.
+
+## 7. PANTALLA 4: GESTIÓN DE LA COLA DE ATENCIÓN
+
+Esta es una de las pantallas más importantes del sistema.
+
+Debe funcionar como una vista operativa desde la que el personal pueda conocer quién espera, quién está siendo atendido y qué casos requieren atención inmediata.
+
+### Tabla principal
+
+Muestra las siguientes columnas:
+
+- Posición operativa.
+- Identificador del paciente.
+- Hora de llegada.
+- Motivo de consulta.
+- Prioridad vigente.
+- Tiempo de espera.
+- Última reevaluación.
+- Estado de atención.
+- Recurso asignado, cuando exista.
+- Acciones.
+
+### Ordenamiento
+
+La cola debe considerar la prioridad clínica vigente y las reglas de ordenamiento definidas por el protocolo.
+
+El tiempo de espera puede utilizarse como criterio complementario dentro de una misma categoría cuando corresponda.
+
+No permitas que un paciente de menor prioridad adelante automáticamente a otro de mayor prioridad solo porque lleva más tiempo esperando.
+
+Los casos de atención inmediata deben destacar de forma evidente.
+
+### Filtros
+
+Incluye filtros por:
+
+- Nivel de prioridad.
+- Estado de atención.
+- Tiempo de espera.
+- Área de atención.
+- Necesidad de reevaluación.
+
+Incluye búsqueda por nombre o identificador cuando el sistema disponga de esos datos.
+
+### Acciones por paciente
+
+Permite:
+
+- Ver información del paciente.
+- Consultar su clasificación.
+- Registrar una reevaluación.
+- Cambiar el estado de atención según los permisos.
+- Asignar un recurso disponible cuando corresponda.
+
+### Estados operativos
+
+Utiliza estados consistentes, como:
+
+- En espera.
+- En atención.
+- Atendido.
+
+Si el sistema necesita distinguir un paciente que todavía no ha completado su evaluación inicial, representa esa situación explícitamente sin confundirla con una clasificación ya realizada.
+
+Las acciones deben actualizar el estado compartido de la aplicación y reflejar los cambios en las pantallas correspondientes.
+
+## 8. PANTALLA 5: REEVALUACIÓN DEL PACIENTE
+
+Crea una pantalla para localizar a un paciente registrado y actualizar su condición durante la espera o la atención, según el flujo operativo permitido.
+
+### Información inicial
+
+Muestra:
+
+- Identificador del paciente.
+- Prioridad vigente.
+- Hora de llegada.
+- Tiempo de espera.
+- Última evaluación.
+- Signos vitales anteriores.
+- Síntomas y observaciones previas.
+- Estado de atención.
+
+### Formulario de reevaluación
+
+Permite registrar:
+
+- Nuevos signos vitales.
+- Cambios en los síntomas.
+- Nuevas observaciones clínicas.
+- Fecha y hora de la reevaluación.
+- Profesional responsable, según la sesión autenticada.
+
+Los datos anteriores deben mantenerse disponibles para consultar la evolución del paciente.
+
+### Nueva evaluación con IA
+
+Después de registrar los cambios, permite solicitar una nueva evaluación con IA utilizando la información actualizada y el contexto clínico pertinente que esté disponible.
+
+Muestra:
+
+- Prioridad anterior.
+- Nueva prioridad propuesta.
+- Cambios detectados.
+- Explicación de la recomendación.
+- Información faltante.
+- Fecha y hora de la evaluación.
+
+Si la IA propone aumentar la prioridad, genera una alerta visual destacada que permita al personal sanitario identificar el cambio rápidamente.
+
+No permitas que la prioridad anterior se sobrescriba sin conservar un historial de la evaluación y su resultado.
+
+La interfaz debe permitir registrar la decisión del profesional sanitario y mantener diferenciadas la prioridad propuesta por la IA y la prioridad operativa vigente.
+
+Si se identifican señales de peligro, el sistema debe comunicar la necesidad de valoración inmediata de acuerdo con el protocolo aplicable. La seguridad no debe depender exclusivamente de que la IA responda correctamente.
+
+## 9. PANTALLA 6: GESTIÓN DE RECURSOS DISPONIBLES
+
+Diseña una pantalla para consultar y administrar la disponibilidad operativa de los recursos del servicio de emergencias.
+
+El MVP contempla tres tipos de recursos:
+
+- Médicos.
+- Camas.
+- Áreas de atención.
+
+### Resumen de disponibilidad
+
+Muestra indicadores para cada tipo de recurso:
+
+- Total registrado.
+- Disponible.
+- Asignado o en uso.
+- No disponible, cuando corresponda.
+
+Los valores deben proceder de los datos del sistema.
+
+### Gestión de recursos
+
+Incluye una tabla con:
+
+- Identificador del recurso.
+- Tipo de recurso.
+- Nombre o descripción.
+- Estado actual.
+- Paciente asociado, si corresponde.
+- Hora de asignación.
+- Acciones disponibles.
+
+### Operaciones
+
+Permite:
+
+- Registrar un recurso.
+- Consultar sus detalles.
+- Actualizar su disponibilidad.
+- Asignarlo a un paciente.
+- Liberarlo cuando termine su utilización.
+
+Valida que no se pueda asignar un mismo recurso exclusivo a varios pacientes simultáneamente.
+
+Para las camas y las áreas, contempla los estados necesarios para distinguir disponibilidad, ocupación y falta de disponibilidad.
+
+Para los médicos, contempla su disponibilidad operativa y las asignaciones que correspondan al alcance del MVP.
+
+Cuando un recurso se asigne o libere, actualiza los indicadores del panel y la información relacionada con el paciente.
+
+No permitas que un recurso se marque como disponible si continúa asignado a un paciente.
+
+## 10. MODELO DE DATOS Y RELACIONES ENTRE PANTALLAS
+
+Todas las pantallas deben representar el mismo conjunto de información.
+
+El registro de un paciente debe alimentar su evaluación inicial y su entrada en la cola.
+
+Una reevaluación debe actualizar la información clínica vigente y, cuando corresponda, generar una nueva propuesta de prioridad.
+
+La cola debe reflejar la prioridad operativa vigente, el estado de atención y el tiempo de espera.
+
+La asignación de recursos debe reflejarse tanto en el módulo de recursos como en la información del paciente.
+
+El panel de control debe calcular sus indicadores a partir de los mismos datos.
+
+No crees tablas aisladas con pacientes diferentes para cada pantalla ni mantengas valores contradictorios entre componentes.
+
+Respeta el modelo de datos y las API existentes. Si falta alguna operación necesaria, identifica qué integración hace falta y evita inventar endpoints o afirmar que una operación está conectada cuando no lo está.
+
+Si necesitas adaptar el frontend, crea una capa de servicios que separe la presentación de las llamadas al backend.
+
+## 11. ESTADOS, VALIDACIONES Y MENSAJES
+
+Todas las pantallas deben contemplar:
+
+- Estado de carga.
+- Estado vacío.
+- Error de conexión.
+- Error de validación.
+- Operación completada.
+- Confirmación para operaciones importantes.
+- Mensajes de error comprensibles.
+- Prevención de envíos duplicados.
+
+No utilices alertas genéricas del navegador como mecanismo principal de interacción.
+
+Utiliza notificaciones discretas, mensajes junto a los campos y cuadros de confirmación cuando sean apropiados.
+
+Las acciones críticas deben estar claramente identificadas.
+
+Incluye accesibilidad básica: contraste adecuado, etiquetas en formularios, navegación por teclado y estados que no dependan exclusivamente del color.
+
+## 12. DATOS DE DEMOSTRACIÓN
+
+Si el backend todavía no ofrece todos los datos u operaciones necesarios para demostrar el MVP, crea un modo de demostración claramente identificado.
+
+Este modo puede incluir pacientes ficticios, evaluaciones de ejemplo, recursos y métricas coherentes para visualizar el sistema.
+
+Sin embargo:
+
+- No mezcles silenciosamente datos ficticios con datos reales.
+- No muestres una respuesta simulada como si proviniera de la IA real.
+- No alteres los datos de producción para probar el diseño.
+- No afirmes que una acción se guardó en el servidor si solamente se modificó el estado local.
+- Mantén la estructura preparada para conectar los servicios reales posteriormente.
+
+Los datos de demostración deben ser consistentes entre todas las pantallas y permitir probar los flujos principales de principio a fin.
+
+## 13. ARQUITECTURA DEL FRONTEND
+
+Revisa primero la arquitectura existente y adáptala sin reescribir innecesariamente lo que funciona.
+
+Organiza el código en componentes reutilizables, páginas, servicios, tipos de datos y utilidades, según la tecnología del proyecto.
+
+Centraliza los elementos visuales recurrentes, como:
+
+- Menú de navegación.
+- Encabezado.
+- Tarjetas de indicadores.
+- Tablas.
+- Formularios.
+- Etiquetas de prioridad.
+- Estados de carga.
+- Alertas.
+- Modales.
+- Notificaciones.
+
+Evita duplicar componentes o lógica entre pantallas.
+
+Si el proyecto utiliza React y TypeScript, conserva el tipado y define interfaces o tipos coherentes para pacientes, evaluaciones, estados de atención y recursos.
+
+No cambies el stack tecnológico ni instales dependencias innecesarias sin una razón concreta.
+
+## 14. SEGURIDAD Y PRIVACIDAD
+
+Como MediFlow IA maneja información sanitaria, la interfaz debe evitar la exposición innecesaria de datos personales.
+
+Respeta la autenticación y los permisos existentes. No expongas credenciales, claves de API ni secretos en el código del cliente.
+
+No incluyas información clínica real en los datos de demostración.
+
+Evita mostrar información sensible en notificaciones, registros de depuración o mensajes de error.
+
+No guardes información clínica en almacenamiento local del navegador como solución improvisada para reemplazar el backend.
+
+## 15. CRITERIOS DE ACEPTACIÓN
+
+Considera terminado el rediseño solamente cuando se cumplan estos criterios:
+
+1. El diseño general es coherente en todas las pantallas.
+2. Las seis funcionalidades del MVP son accesibles desde la navegación principal.
+3. El registro de pacientes contiene los campos y las validaciones necesarias.
+4. La clasificación de IA diferencia las recomendaciones automáticas de las decisiones profesionales.
+5. La cola refleja los pacientes registrados y utiliza las reglas de prioridad definidas.
+6. La reevaluación conserva el historial y muestra los cambios de prioridad.
+7. La gestión de recursos permite consultar, asignar, actualizar y liberar recursos de manera coherente.
+8. El panel presenta indicadores derivados de los datos disponibles.
+9. Los formularios, botones, filtros y acciones principales funcionan.
+10. Las pantallas comparten información coherente.
+11. Los estados de carga, error, vacío y éxito están implementados.
+12. El diseño se adapta a diferentes tamaños de pantalla.
+13. No se han roto las integraciones funcionales existentes.
+14. Se distingue claramente entre funcionalidades reales y las que todavía funcionan en modo de demostración.
+
+## 16. ORDEN DE EJECUCIÓN
+
+Trabaja en este orden:
+
+1. Inspecciona el proyecto existente.
+2. Define la estructura de navegación y los componentes compartidos.
+3. Implementa el sistema visual global.
+4. Rediseña el panel de control.
+5. Rediseña el registro y la clasificación inicial.
+6. Rediseña la cola de atención.
+7. Implementa la interfaz de reevaluación.
+8. Implementa la gestión de recursos.
+9. Conecta las pantallas mediante los servicios y datos existentes.
+10. Verifica los flujos completos, las validaciones, la navegación y el diseño responsive.
+
+No te detengas después de crear el diseño inicial. Implementa los cambios directamente, ejecuta el proyecto y corrige los errores que encuentres.
+
+Al finalizar, proporciona un resumen de las pantallas modificadas, los flujos que funcionan, las integraciones reales y las funcionalidades que todavía necesitan trabajo en el backend o en los servicios de IA.
+
+**Resultado esperado:** un frontend completo, profesional, consistente y funcional para el MVP de MediFlow IA, orientado a la gestión del flujo de pacientes en emergencias y construido alrededor de las seis funcionalidades definidas.
