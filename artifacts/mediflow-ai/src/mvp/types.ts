@@ -62,12 +62,14 @@ export type MvpDoctor = StaffMember & {
 
 export type MvpBed = Bed & {
   observations?: string;
+  availability?: 'Disponible' | 'No disponible';
 };
 
 export type MvpArea = AreaCapacity & {
   id: string;
   attentionType: string;
   isAvailable: boolean;
+  unavailableBeds?: number;
   observations?: string;
 };
 

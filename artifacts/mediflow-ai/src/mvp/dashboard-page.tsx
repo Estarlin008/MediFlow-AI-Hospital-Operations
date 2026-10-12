@@ -63,7 +63,10 @@ export function DashboardPage() {
     (value): value is number => value !== null,
   );
   const averageWait = waits.length ? Math.round(waits.reduce((sum, value) => sum + value, 0) / waits.length) : null;
-  const freeBeds = state.beds.filter((bed) => bed.status === 'Libre').length;
+  const freeBeds = state.beds.filter((bed) => {
+    const area = state.areas.find((item) => item.name === bed.area);
+    return bed.status === 'Libre' && bed.availability !== 'No disponible' && area?.isAvailable !== false;
+  }).length;
   const occupiedBeds = state.beds.filter((bed) => bed.status === 'Ocupada').length;
   const bedOccupancy = state.beds.length
     ? Math.round((occupiedBeds / state.beds.length) * 100)

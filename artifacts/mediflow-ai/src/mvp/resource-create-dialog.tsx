@@ -130,8 +130,8 @@ export function ResourceCreateDialog({
     setFormError('');
   }
 
-  function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  function submit(formEvent: FormEvent<HTMLFormElement>) {
+    formEvent.preventDefault();
     const id = normalizeId(form.id);
     const errors: string[] = [];
 
@@ -161,7 +161,7 @@ export function ResourceCreateDialog({
       return;
     }
 
-    const event = createEvent(
+    const auditEvent = createEvent(
       'Recurso agregado en demo',
       `${typeLabels[form.kind]} ${id}`,
     );
@@ -177,19 +177,20 @@ export function ResourceCreateDialog({
         availability: form.status === 'available' ? 'Disponible' : 'No disponible',
         observations: form.observations.trim() || undefined,
       };
-      dispatch({ type: 'add-doctor', doctor, event });
+      dispatch({ type: 'add-doctor', doctor, event: auditEvent });
     } else if (form.kind === 'bed') {
       const bed: MvpBed = {
         id,
         area: form.area,
         type: form.detail.trim(),
-        status: form.status === 'available' ? 'Libre' : 'Limpieza',
+        status: 'Libre',
+        availability: form.status === 'available' ? 'Disponible' : 'No disponible',
         patient: '—',
         since: '—',
         acuity: '—',
         observations: form.observations.trim() || undefined,
       };
-      dispatch({ type: 'add-bed', bed, event });
+      dispatch({ type: 'add-bed', bed, event: auditEvent });
     } else {
       const area: MvpArea = {
         id,
@@ -202,7 +203,7 @@ export function ResourceCreateDialog({
         isAvailable: form.status === 'available',
         observations: form.observations.trim() || undefined,
       };
-      dispatch({ type: 'add-area', area, event });
+      dispatch({ type: 'add-area', area, event: auditEvent });
     }
 
     onCreated(form.kind, id);

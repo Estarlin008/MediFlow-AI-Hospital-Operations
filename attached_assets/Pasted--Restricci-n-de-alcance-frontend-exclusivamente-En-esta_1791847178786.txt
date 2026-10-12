@@ -1,0 +1,25 @@
+### Restricción de alcance: frontend exclusivamente
+
+En esta etapa, modifica exclusivamente el frontend existente de MediFlow IA.
+
+**Estado actual del proyecto:**
+- No existe backend implementado.
+- No existe base de datos configurada.
+- Las integraciones con IA, reconocimiento de voz y n8n no están listas para conectarse al flujo completo.
+- El objetivo actual es terminar la interfaz del MVP y preparar su estructura para futuras integraciones.
+
+**Instrucciones obligatorias:**
+
+1. No implementes un backend ni una base de datos.
+2. No crees endpoints, servidores, tablas ni migraciones.
+3. No intentes conectar el frontend con endpoints inexistentes.
+4. No alteres innecesariamente la configuración, las dependencias o la arquitectura existente.
+5. Implementa las pantallas, componentes, navegación, formularios, validaciones visuales y estados de interacción necesarios.
+6. Utiliza datos de demostración identificados claramente como tales. Centraliza estos datos para poder sustituirlos posteriormente por respuestas de la API.
+7. Separa las operaciones de datos mediante servicios o interfaces desacoplados del diseño, utilizando implementaciones de demostración cuando corresponda.
+8. No presentes operaciones simuladas como si los datos se hubieran guardado permanentemente ni como si una IA real hubiera procesado información clínica.
+9. Implementa la interfaz del registro por voz y los controles de micrófono. Si se incorpora transcripción real, utiliza únicamente una solución de reconocimiento de voz que esté efectivamente disponible y configurada; de lo contrario, deja claramente indicado que la transcripción está pendiente de integración.
+10. Documenta las integraciones pendientes con el backend, la base de datos, los servicios de IA y n8n.
+11. Conserva las funcionalidades existentes que ya estén correctas y verifica que la aplicación siga funcionando.
+
+Antes de modificar el código, inspecciona la estructura actual del proyecto y determina qué componentes y funcionalidades deben reutilizarse. No reconstruyas innecesariamente lo que ya funciona.

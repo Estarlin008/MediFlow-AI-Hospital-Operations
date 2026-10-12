@@ -308,9 +308,12 @@ function reducer(state: MvpState, action: MvpAction): MvpState {
     case 'assign-bed': {
       const targetBed = state.beds.find((bed) => bed.id === action.bedId);
       const targetEpisode = state.episodes.find((episode) => episode.id === action.episodeId);
+      const targetArea = targetBed && state.areas.find((area) => area.name === targetBed.area);
       if (
         !targetBed ||
         targetBed.status !== 'Libre' ||
+        targetBed.availability === 'No disponible' ||
+        targetArea?.isAvailable === false ||
         !targetEpisode ||
         targetEpisode.status === 'Atendido' ||
         (targetEpisode.bed && !['Sin asignar', 'Pendiente', '—'].includes(targetEpisode.bed)) ||
@@ -435,7 +438,13 @@ function reducer(state: MvpState, action: MvpAction): MvpState {
         ...state,
         beds: [action.bed, ...state.beds],
         areas: state.areas.map((item) =>
-          item.name === action.bed.area ? { ...item, total: item.total + 1 } : item,
+          item.name === action.bed.area
+            ? {
+                ...item,
+                total: item.total + 1,
+                unavailableBeds: (item.unavailableBeds ?? 0) + (action.bed.availability === 'No disponible' ? 1 : 0),
+              }
+            : item,
         ),
         activity: appendEvent(state.activity, action.event),
       };

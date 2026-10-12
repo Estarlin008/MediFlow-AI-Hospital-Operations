@@ -29,6 +29,14 @@ Interfaz de operación hospitalaria con datos demo y una frontera preparada para
 - El transporte n8n está aislado en un único cliente con timeout y validación Zod.
 - Las prioridades y reglas clínicas llegan como resultado externo; el frontend no las calcula.
 - Las variables `VITE_*` son públicas y nunca deben contener secretos.
+- El alcance actual es frontend exclusivamente: no agregar backend, base de datos, endpoints ni migraciones.
+- Las altas y cambios en modo demo solo viven en el estado de la sesión; no presentarlos como guardados permanentemente.
+
+## Integraciones pendientes
+
+- Backend y base de datos: no están implementados; las operaciones de demostración no persisten tras recargar.
+- IA clínica y reconocimiento de voz: no están conectados al flujo completo; no indicar que hubo análisis clínico o transcripción real.
+- n8n: la integración configurada no cubre el flujo completo; las altas de médicos, camas y áreas aún no tienen una operación de guardado.
 
 ## Product
 

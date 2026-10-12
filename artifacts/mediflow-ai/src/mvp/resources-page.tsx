@@ -3,7 +3,6 @@ import { Link } from 'wouter';
 import {
   ArrowRight,
   BedDouble,
-  Check,
   CircleHelp,
   Plus,
   Stethoscope,
@@ -12,6 +11,7 @@ import {
 } from 'lucide-react';
 import { ActionButton, EmptyState, PageHeading, Panel, StateBadge, fieldClass } from './components';
 import { createEvent, useMvpStore } from './state';
+import { ResourceCreateDialog, type ResourceKind } from './resource-create-dialog';
 
 type ResourceTab = 'beds' | 'staff' | 'areas';
 
@@ -27,6 +27,8 @@ export function ResourcesPage() {
   const [bedSelections, setBedSelections] = useState<Record<string, string>>({});
   const [doctorSelections, setDoctorSelections] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createKind, setCreateKind] = useState<ResourceKind>('bed');
 
   const assignableEpisodes = useMemo(
     () =>
@@ -37,20 +39,28 @@ export function ResourcesPage() {
       ),
     [state.episodes],
   );
-  const assignableDoctors = state.doctors.filter(
-    (doctor) =>
-      doctor.availability === 'Disponible' &&
-      !doctor.role.toLowerCase().includes('enfermer'),
-  );
-  const freeBeds = state.beds.filter((bed) => bed.status === 'Libre').length;
+  const freeBeds = state.beds.filter((bed) => {
+    const area = state.areas.find((item) => item.name === bed.area);
+    return bed.status === 'Libre' && bed.availability !== 'No disponible' && area?.isAvailable !== false;
+  }).length;
   const occupiedBeds = state.beds.filter((bed) => bed.status === 'Ocupada').length;
   const availableDoctors = state.doctors.filter((doctor) => doctor.availability === 'Disponible').length;
+
+  function openCreateResource() {
+    setCreateKind(tab === 'staff' ? 'doctor' : tab === 'areas' ? 'area' : 'bed');
+    setCreateOpen(true);
+  }
+
+  function handleResourceCreated(kind: ResourceKind, id: string) {
+    setTab(kind === 'doctor' ? 'staff' : kind === 'area' ? 'areas' : 'beds');
+    setNotice(`El recurso ${id} se agregó al inventario de esta sesión de demostración.`);
+  }
 
   function assignBed(bedId: string) {
     const episodeId = bedSelections[bedId];
     const bed = state.beds.find((item) => item.id === bedId);
     const episode = state.episodes.find((item) => item.id === episodeId);
-    if (!bed || !episode || bed.status !== 'Libre') return;
+    if (!bed || !episode || bed.status !== 'Libre' || bed.availability === 'No disponible') return;
     if (state.beds.some((item) => item.patientId === episode.patientId)) {
       setNotice('Este paciente ya tiene una cama asignada. Libera la asignación anterior antes de continuar.');
       return;
@@ -123,18 +133,23 @@ export function ResourcesPage() {
         eyebrow="Capacidad operativa"
         title="Gestión de recursos"
         description="Consulta ocupación de camas, disponibilidad del personal y capacidad por área."
-        actions={<Link className="mf-link-button" href="/cola">Volver a la cola <ArrowRight size={14} /></Link>}
+        actions={
+          <>
+            <ActionButton icon={Plus} onClick={openCreateResource}>Agregar recurso</ActionButton>
+            <Link className="mf-link-button" href="/cola">Volver a la cola <ArrowRight size={14} /></Link>
+          </>
+        }
       />
 
       {!demoMode && (
         <div className="mb-5 flex items-start gap-3 rounded-xl border border-[#e8d6a9] bg-[#fffaf0] px-4 py-3 text-xs leading-5 text-[#70581d]">
           <CircleHelp size={17} className="mt-0.5 shrink-0" />
-          <p><strong>Operación en solo lectura.</strong> La API configurada puede devolver camas; no proporciona médicos ni áreas y no tiene rutas para asignar o liberar recursos. No se muestran datos de demostración junto con los registros reales.</p>
+          <p><strong>Operación en solo lectura.</strong> La API configurada puede devolver camas; no proporciona médicos ni áreas y no tiene operaciones para crear, asignar o liberar recursos. No se muestran datos de demostración junto con los registros reales.</p>
         </div>
       )}
       {demoMode && (
         <div className="mb-5 rounded-xl border border-[#e8d6a9] bg-[#fffaf0] px-4 py-3 text-[11px] leading-5 text-[#70581d]">
-          <strong>Modo demo.</strong> Las asignaciones y cambios de disponibilidad se conservan solo durante esta sesión.
+          <strong>Modo demo.</strong> Las altas, asignaciones y cambios de disponibilidad se conservan solo durante esta sesión.
         </div>
       )}
       {notice && <div role="status" aria-live="polite" className="mb-4 rounded-xl border border-[#c8dce8] bg-[#f2f8fb] px-4 py-3 text-xs text-[#36556e]">{notice}</div>}
@@ -198,20 +213,25 @@ export function ResourcesPage() {
                 <tbody>
                   {state.beds.map((bed) => {
                     const linkedEpisode = state.episodes.find((episode) => episode.bed === bed.id || (bed.patientId && episode.patientId === bed.patientId));
-                    const bedStatusTone = bed.status === 'Libre' ? 'good' : bed.status === 'Ocupada' ? 'warning' : 'neutral';
+                    const bedDisplayStatus = bed.availability === 'No disponible' ? 'No disponible' : bed.status;
+                    const bedStatusTone = bed.availability === 'No disponible' ? 'neutral' : bed.status === 'Libre' ? 'good' : bed.status === 'Ocupada' ? 'warning' : 'neutral';
                     const selectedEpisode = bedSelections[bed.id] ?? '';
                     return (
                       <tr key={bed.id}>
                         <td className="font-mono-ui text-xs font-extrabold">{bed.id}</td>
-                        <td><span className="block text-xs font-semibold">{bed.area}</span><span className="mt-1 block text-[10px] text-muted-foreground">{bed.type}</span></td>
-                        <td><StateBadge tone={bedStatusTone}>{bed.status}</StateBadge></td>
+                        <td>
+                          <span className="block text-xs font-semibold">{bed.area}</span>
+                          <span className="mt-1 block text-[10px] text-muted-foreground" title={bed.observations}>{bed.type}</span>
+                          {bed.observations && <span className="mt-1 block max-w-48 truncate text-[9px] text-muted-foreground" title={bed.observations}>{bed.observations}</span>}
+                        </td>
+                        <td><StateBadge tone={bedStatusTone}>{bedDisplayStatus}</StateBadge></td>
                         <td>
                           <span className="text-xs font-semibold">{bed.patient === '—' ? '—' : bed.patient}</span>
                           {linkedEpisode && <Link className="mt-1 block text-[10px] text-accent underline" href={`/cola?episode=${linkedEpisode.id}`}>Ver episodio {linkedEpisode.id}</Link>}
                         </td>
                         <td className="text-xs text-muted-foreground">{bed.since === '—' ? '—' : `Desde ${bed.since}`}</td>
                         <td>
-                          {demoMode && bed.status === 'Libre' ? (
+                          {demoMode && bed.status === 'Libre' && bed.availability !== 'No disponible' ? (
                             <div className="flex min-w-[240px] items-center gap-2">
                               <select
                                 aria-label={`Episodio para cama ${bed.id}`}
@@ -261,7 +281,11 @@ export function ResourcesPage() {
                       <td>
                         <span className="flex items-center gap-2.5">
                           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#eef4f6] text-[10px] font-extrabold text-primary">{doctor.initials}</span>
-                          <span className="min-w-0"><b className="block text-xs">{doctor.name}</b><span className="mt-0.5 block text-[10px] text-muted-foreground">{doctor.role}</span></span>
+                          <span className="min-w-0">
+                            <b className="block text-xs">{doctor.name}</b>
+                            <span className="mt-0.5 block font-mono-ui text-[9px] text-muted-foreground">{doctor.id}</span>
+                            {doctor.observations && <span className="mt-1 block max-w-48 truncate text-[9px] text-muted-foreground" title={doctor.observations}>{doctor.observations}</span>}
+                          </span>
                         </span>
                       </td>
                       <td className="text-xs">{doctor.role}</td>
@@ -316,15 +340,18 @@ export function ResourcesPage() {
               <div className="grid gap-3 p-5 sm:grid-cols-2 xl:grid-cols-3">
               {state.areas.map((area) => {
                 const occupancy = area.total ? Math.min(100, Math.round((area.used / area.total) * 100)) : 0;
-                const free = Math.max(0, area.total - area.used);
+                const free = area.isAvailable ? Math.max(0, area.total - area.used - (area.unavailableBeds ?? 0)) : 0;
                 return (
                   <article className="rounded-xl border border-border bg-white p-4" key={area.name}>
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <h3 className="text-sm font-extrabold">{area.name}</h3>
-                        <p className="mt-1 text-[10px] text-muted-foreground">{area.note}</p>
+                        <p className="mt-1 font-mono-ui text-[9px] text-muted-foreground">{area.id} · {area.attentionType}</p>
+                        {area.observations && <p className="mt-1 text-[10px] text-muted-foreground">{area.observations}</p>}
                       </div>
-                      <StateBadge tone={free > 0 ? 'good' : 'warning'}>{free} disponibles</StateBadge>
+                      <StateBadge tone={!area.isAvailable ? 'neutral' : free > 0 ? 'good' : 'warning'}>
+                        {!area.isAvailable ? 'No disponible' : `${free} disponibles`}
+                      </StateBadge>
                     </div>
                     <div className="mt-5 flex items-baseline justify-between">
                       <strong className="font-mono-ui text-2xl">{area.used} <span className="font-sans text-xs font-medium text-muted-foreground">ocupados</span></strong>
@@ -333,7 +360,7 @@ export function ResourcesPage() {
                     <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#eaf0f2]">
                       <div className={`h-full rounded-full ${occupancy >= 90 ? 'bg-[#b04c43]' : occupancy >= 70 ? 'bg-[#c48a32]' : 'bg-accent'}`} style={{ width: `${occupancy}%` }} />
                     </div>
-                    <p className="mt-2 text-right text-[10px] text-muted-foreground">{occupancy}% ocupación reportada</p>
+                    <p className="mt-2 text-right text-[10px] text-muted-foreground">{occupancy}% ocupación · {area.total} espacios</p>
                   </article>
                 );
               })}
@@ -345,8 +372,14 @@ export function ResourcesPage() {
 
       <div className="mt-4 flex flex-wrap items-start gap-2 rounded-xl border border-border bg-white px-4 py-3 text-[10px] leading-5 text-muted-foreground">
         <CircleHelp size={14} className="mt-0.5 shrink-0" />
-        <p>Las acciones de asignación y disponibilidad son de demostración. Para activar cambios reales, la API debe ofrecer operaciones de asignar/liberar y reglas de exclusividad del lado servidor.</p>
+        <p>Las altas, asignaciones y cambios de disponibilidad son de demostración. Para activar cambios reales, la API debe ofrecer operaciones de creación y asignación/liberación con reglas de exclusividad del lado servidor.</p>
       </div>
+      <ResourceCreateDialog
+        open={createOpen}
+        initialKind={createKind}
+        onOpenChange={setCreateOpen}
+        onCreated={handleResourceCreated}
+      />
     </div>
   );
 }
