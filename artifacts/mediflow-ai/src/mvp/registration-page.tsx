@@ -6,6 +6,8 @@ import {
   ArrowRight,
   ClipboardPlus,
   Info,
+  Mic,
+  MicOff,
   Search,
   UserRound,
   UserRoundPlus,
@@ -59,6 +61,7 @@ export function RegistrationPage() {
   const [search, setSearch] = useState('');
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<{ kind: 'success' | 'error' | 'info'; text: string } | null>(null);
+  const [voiceNotice, setVoiceNotice] = useState<string | null>(null);
   const age = form.age.trim() ? Number(form.age) : ageFromBirthDate(form.birthDate);
 
   const visiblePatients = useMemo(() => {
@@ -234,6 +237,50 @@ export function RegistrationPage() {
               <Field label="Alergias informadas" hint="Deja vacío si no se preguntó">
                 <textarea className={`${fieldClass} min-h-[78px] resize-y`} maxLength={300} value={form.allergies} onChange={(e) => update('allergies', e.target.value)} placeholder="Separadas por coma" />
               </Field>
+            </div>
+          </Panel>
+
+          <Panel title="Registro por voz" detail="La interfaz está preparada para una futura integración de dictado clínico.">
+            <div className="space-y-4 p-5">
+              <div className="flex items-start gap-3 rounded-xl border border-[#e8d6a9] bg-[#fffaf0] p-4 text-xs leading-5 text-[#70581d]">
+                <Info size={17} className="mt-0.5 shrink-0" />
+                <p>
+                  <strong>Transcripción pendiente de integración.</strong> Este MVP no solicita acceso al micrófono,
+                  no graba audio ni genera texto automáticamente. Usa el campo “Síntomas y relato” mientras tanto.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <ActionButton
+                  type="button"
+                  icon={Mic}
+                  variant="secondary"
+                  onClick={() => setVoiceNotice('El micrófono no se activó: la integración de voz aún no está configurada y no se capturó audio.')}
+                >
+                  Iniciar grabación
+                </ActionButton>
+                <ActionButton type="button" icon={MicOff} variant="secondary" disabled>
+                  Detener
+                </ActionButton>
+                <span className="text-[10px] font-semibold text-muted-foreground">Micrófono no conectado</span>
+              </div>
+              {voiceNotice && (
+                <p role="status" aria-live="polite" className="rounded-lg border border-[#c7d8e6] bg-[#f2f7fb] px-3 py-2 text-[11px] leading-5 text-[#36556e]">
+                  {voiceNotice}
+                </p>
+              )}
+              <Field label="Transcripción">
+                <textarea
+                  className={`${fieldClass} min-h-[76px] resize-y bg-[#f4f6f7]`}
+                  value=""
+                  disabled
+                  readOnly
+                  placeholder="Pendiente de integrar el reconocimiento de voz."
+                  aria-describedby="voice-transcription-note"
+                />
+              </Field>
+              <p id="voice-transcription-note" className="text-[10px] text-muted-foreground">
+                No se guardará ni enviará audio desde esta pantalla.
+              </p>
             </div>
           </Panel>
 
