@@ -1,0 +1,476 @@
+# PROMPT PARA REPLIT AGENT — BACKEND MVP DE MEDIFLOW IA
+
+## 1. Contexto del proyecto
+
+Estoy desarrollando **MediFlow IA**, una plataforma de apoyo a la atención médica que permite registrar pacientes, gestionar consultas, generar informes clínicos asistidos por IA, realizar triaje, administrar la cola de atención y gestionar recursos médicos.
+
+El frontend ya está desarrollado con React y TypeScript. También existen workflows de n8n para el procesamiento de consultas y el triaje de pacientes.
+
+Necesito implementar la infraestructura básica del backend y conectar el frontend con una API real.
+
+### Tecnologías obligatorias
+
+- Backend: Python con FastAPI.
+- Base de datos: PostgreSQL.
+- ORM: SQLAlchemy 2.x.
+- Migraciones: Alembic.
+- Validación: Pydantic.
+- Pruebas: pytest y HTTPX.
+- Integración con IA: workflows existentes de n8n mediante HTTP.
+- API: REST con JSON.
+- Identificadores: UUID.
+
+**No reemplaces el frontend ni cambies su diseño visual.** Trabaja sobre el proyecto existente, conserva sus componentes y funcionalidades actuales y adapta el backend a sus necesidades.
+
+## 2. Primera tarea: inspeccionar el proyecto
+
+Antes de modificar archivos:
+
+1. Inspecciona la estructura completa del repositorio.
+2. Identifica el frontend, sus páginas, componentes, formularios, tipos TypeScript, servicios API y datos simulados.
+3. Identifica todas las funcionalidades existentes y determina cuáles necesitan persistencia.
+4. Localiza las variables de entorno y las dependencias actuales.
+5. Comprueba si ya existe una base de datos, un esquema o algún código de backend que pueda reutilizarse.
+6. Identifica los contratos esperados por el frontend y los formatos reales de respuesta de los workflows de n8n.
+
+No elimines funcionalidades existentes ni reemplaces la aplicación por una demostración nueva.
+
+Si encuentras decisiones incompatibles con esta arquitectura, documenta el problema y aplica el cambio mínimo necesario.
+
+## 3. Crear el backend FastAPI
+
+Implementa una aplicación FastAPI organizada por módulos, con una estructura similar a esta:
+
+app/
+- main.py
+- core/config.py
+- core/security.py
+- db/session.py
+- models/
+- schemas/
+- api/routes/
+- services/
+- integrations/n8n_client.py
+
+Incluye:
+
+- Configuración mediante variables de entorno.
+- Conexión a PostgreSQL.
+- Modelos SQLAlchemy.
+- Migraciones con Alembic.
+- Esquemas Pydantic para las entradas y salidas.
+- Manejo centralizado de errores.
+- Validación de datos.
+- Documentación OpenAPI disponible mediante `/docs`.
+- CORS configurado únicamente para los orígenes autorizados del frontend.
+- Pruebas automatizadas de los endpoints principales.
+
+No utilices una base de datos en memoria ni sustituyas PostgreSQL por SQLite.
+
+## 4. Modelo de datos inicial
+
+Implementa las entidades necesarias para el MVP.
+
+### Users
+
+Representa a los usuarios del sistema.
+
+Campos mínimos:
+- id
+- full_name
+- email
+- password_hash
+- role
+- is_active
+- created_at
+
+Utiliza roles controlados, inicialmente ADMIN, DOCTOR, NURSE y RECEPTIONIST, adaptándolos a los roles que ya utiliza el frontend.
+
+### Patients
+
+Representa a los pacientes.
+
+Campos mínimos:
+- id
+- medical_record_number
+- first_name
+- last_name
+- date_of_birth
+- sex
+- phone
+- created_at
+- updated_at
+
+El número de expediente debe ser único.
+
+### Consultations
+
+Representa los episodios de atención.
+
+Campos mínimos:
+- id
+- patient_id
+- doctor_id
+- status
+- chief_complaint
+- created_at
+- updated_at
+- confirmed_at
+
+Una consulta debe estar vinculada a un paciente y, cuando corresponda, al profesional responsable.
+
+### ConsultationReports
+
+Almacena los informes clínicos estructurados y su estado de revisión.
+
+Campos mínimos:
+- id
+- consultation_id
+- version
+- report_data
+- review_status
+- created_at
+- created_by
+- confirmed_at
+
+Utiliza JSONB para los campos estructurados del informe cuando sea apropiado.
+
+### TriageAssessments
+
+Almacena las evaluaciones de triaje.
+
+Campos mínimos:
+- id
+- consultation_id
+- status
+- priority
+- red_flags_detected
+- red_flags
+- relevant_symptoms
+- missing_information
+- reason
+- reviewed_by
+- reviewed_at
+- created_at
+
+La prioridad solo puede ser P1, P2, P3, P4 o INSUFFICIENT_INFORMATION.
+
+No inventes reglas clínicas para asignar prioridades.
+
+### QueueEntries
+
+Representa la cola de atención.
+
+Campos mínimos:
+- id
+- consultation_id
+- priority
+- status
+- queued_at
+- called_at
+- completed_at
+
+Implementa las restricciones necesarias para evitar entradas activas duplicadas de una misma consulta.
+
+### Resources
+
+Representa los recursos médicos administrables.
+
+Campos mínimos:
+- id
+- name
+- type
+- description
+- status
+- capacity
+- created_at
+- updated_at
+
+Debe ser posible registrar, listar, consultar, editar y desactivar recursos desde el frontend.
+
+### ResourceAssignments
+
+Representa las asignaciones de recursos.
+
+Campos mínimos:
+- id
+- resource_id
+- consultation_id
+- assigned_by
+- assigned_at
+- released_at
+
+### AuditLogs
+
+Registra las operaciones importantes del sistema.
+
+Campos mínimos:
+- id
+- user_id
+- action
+- entity_type
+- entity_id
+- created_at
+
+No registres contraseñas, tokens, transcripciones ni contenido clínico sensible en los logs.
+
+Añade claves foráneas, restricciones, índices y relaciones apropiadas. Evita crear tablas innecesarias y no dupliques información que ya exista en el proyecto sin justificarlo.
+
+## 5. Implementar los endpoints REST
+
+Utiliza el prefijo `/api`.
+
+### Salud del servicio
+
+- `GET /api/healthz`
+
+Debe comprobar que la aplicación funciona y devolver un estado apropiado de la conexión a la base de datos sin exponer credenciales ni detalles internos.
+
+### Autenticación
+
+- `POST /api/auth/login`
+- `POST /api/auth/refresh`
+- `POST /api/auth/logout`
+- `GET /api/auth/me`
+
+Implementa autenticación real, hash seguro de contraseñas, autorización por roles y protección de endpoints.
+
+No almacenes contraseñas en texto plano ni expongas credenciales en el frontend.
+
+### Pacientes
+
+- `GET /api/patients`
+- `POST /api/patients`
+- `GET /api/patients/{patient_id}`
+- `PATCH /api/patients/{patient_id}`
+- `GET /api/patients/{patient_id}/consultations`
+
+Incluye paginación, búsqueda y validación de datos.
+
+### Consultas e informes
+
+- `POST /api/consultations`
+- `GET /api/consultations/{consultation_id}`
+- `POST /api/consultations/{consultation_id}/process-report`
+- `PATCH /api/consultations/{consultation_id}/report`
+- `POST /api/consultations/{consultation_id}/confirm`
+- `POST /api/consultations/{consultation_id}/vital-signs`
+
+La generación de informes debe permitir revisar y corregir el resultado antes de confirmarlo.
+
+### Triaje
+
+- `POST /api/consultations/{consultation_id}/triage`
+- `GET /api/triage/{assessment_id}`
+- `POST /api/triage/{assessment_id}/review`
+
+Valida y persiste los resultados devueltos por n8n.
+
+No permitas que un cliente pueda modificar arbitrariamente la prioridad de un paciente sin autorización y sin un registro de auditoría.
+
+### Cola de atención
+
+- `GET /api/queue`
+- `GET /api/queue/{entry_id}`
+- `PATCH /api/queue/{entry_id}/status`
+
+Permite consultar y actualizar la cola, con filtros por estado y prioridad.
+
+No inventes reglas de orden clínico. La ordenación por prioridad debe depender de un protocolo aprobado y de las reglas de negocio configuradas.
+
+### Recursos
+
+- `GET /api/resources`
+- `POST /api/resources`
+- `GET /api/resources/{resource_id}`
+- `PATCH /api/resources/{resource_id}`
+- `DELETE /api/resources/{resource_id}`
+- `POST /api/resources/{resource_id}/assignments`
+- `POST /api/resource-assignments/{assignment_id}/release`
+
+La eliminación de recursos debe ser lógica cuando existan referencias históricas. Impide asignaciones incompatibles con el estado o la capacidad del recurso.
+
+### Dashboard
+
+- `GET /api/dashboard/summary`
+
+Devuelve estadísticas calculadas a partir de los datos reales de PostgreSQL, según los indicadores que ya presenta el frontend.
+
+No inventes cantidades ni devuelvas valores fijos como si fueran datos reales.
+
+## 6. Integración con n8n
+
+Ya existen dos workflows. No construyas otros workflows ni reemplaces la lógica de IA existente.
+
+### Workflow de consultas
+
+Webhook existente:
+
+`POST /webhook/mediflow/consultation`
+
+El workflow recibe:
+- sessionId
+- doctorId
+- patientId
+- language
+- transcript
+
+La transcripción es temporal y debe procesarse sin guardarla permanentemente.
+
+El workflow extrae información clínica, genera un informe estructurado y revisa el informe antes de devolverlo.
+
+El backend debe:
+1. Verificar que el usuario está autorizado para acceder a la consulta.
+2. Validar el payload.
+3. Enviar la información necesaria a n8n.
+4. Validar la respuesta recibida.
+5. Devolver el informe al frontend para su revisión.
+6. Persistir la versión confirmada por el profesional mediante el endpoint correspondiente.
+
+### Workflow de triaje
+
+Webhook existente:
+
+`POST /webhook/mediflow/triage`
+
+El workflow recibe identificadores de sesión y paciente, motivo de consulta, síntomas, edad, sexo, duración, antecedentes, medicamentos, alergias y signos vitales, según los datos disponibles.
+
+La respuesta contiene:
+- sessionId
+- patientId
+- status
+- triage.priority
+- triage.redFlagsDetected
+- triage.redFlags
+- triage.chiefComplaint
+- triage.relevantSymptoms
+- triage.missingInformation
+- triage.reason
+
+Implementa un cliente HTTP reutilizable para n8n, con timeout, tratamiento de errores, validación de respuestas y configuración mediante variables de entorno.
+
+No pongas URLs privadas, tokens ni secretos directamente en el código.
+
+Las llamadas de integración deben realizarse desde FastAPI, nunca directamente desde el navegador.
+
+Los nodos de callback de los workflows existentes están desactivados. Para esta primera versión, FastAPI debe invocar los webhooks y procesar sus respuestas de forma síncrona, evitando persistir dos veces el mismo resultado.
+
+Si n8n no responde, devuelve un error controlado y conserva un estado recuperable. No inventes resultados ni marques una operación como completada cuando haya fallado.
+
+## 7. Contrato entre el frontend y el backend
+
+Inspecciona primero los tipos TypeScript, los formularios y los datos que ya utiliza el frontend.
+
+Adapta los esquemas de Pydantic y las respuestas de FastAPI a esos contratos siempre que sea posible.
+
+Si es necesario cambiar un contrato, documenta:
+- Formato anterior.
+- Formato nuevo.
+- Motivo del cambio.
+- Componentes afectados.
+
+Utiliza JSON de forma consistente y códigos HTTP apropiados.
+
+Implementa respuestas de error claras, sin filtrar detalles internos.
+
+No renombres propiedades ni elimines campos usados por el frontend sin una razón técnica documentada.
+
+## 8. Seguridad y privacidad
+
+Implementa las siguientes medidas:
+
+- Hash de contraseñas mediante Argon2id.
+- Autenticación y autorización por endpoint.
+- Protección de datos según el rol y el recurso.
+- Variables de entorno para las credenciales.
+- Validación estricta de entradas y respuestas de n8n.
+- Límites de tamaño para las solicitudes.
+- Timeouts y tratamiento de fallos de integración.
+- Auditoría de operaciones relevantes.
+- No almacenar la transcripción completa permanentemente.
+- No devolver datos de depuración de n8n en producción.
+- No incluir información clínica en mensajes de error o logs técnicos.
+- Utilizar transacciones para las operaciones que deban actualizar varias entidades.
+- Implementar idempotencia donde existan reintentos que puedan duplicar registros.
+
+No habilites una configuración de seguridad ficticia. Si alguna medida no puede implementarse completamente en el entorno actual, documenta qué falta.
+
+## 9. Variables de entorno
+
+Crea un archivo `.env.example` sin credenciales reales.
+
+Incluye, como mínimo:
+
+DATABASE_URL=
+JWT_SECRET_KEY=
+N8N_BASE_URL=
+N8N_TRIAGE_PATH=/webhook/mediflow/triage
+N8N_CONSULTATION_PATH=/webhook/mediflow/consultation
+N8N_API_KEY=
+FRONTEND_ORIGINS=
+APP_ENV=development
+
+Adapta la autenticación de n8n a su configuración real. Si utiliza Header Auth, configura el encabezado correspondiente de forma segura y documentada.
+
+No desactives la autenticación de los webhooks para simplificar la integración.
+
+## 10. Pruebas obligatorias
+
+Crea pruebas para:
+
+- Conexión y migraciones de PostgreSQL.
+- Registro y consulta de pacientes.
+- Validación de entradas incorrectas.
+- Autenticación y permisos.
+- CRUD de recursos.
+- Creación de consultas.
+- Confirmación de informes.
+- Persistencia de resultados de triaje.
+- Actualización de la cola.
+- Errores y timeouts de n8n.
+- Prevención de duplicados.
+- Protección de datos entre usuarios con permisos distintos.
+
+Utiliza respuestas simuladas de n8n en las pruebas automatizadas. No dependas de que el servicio externo esté disponible para ejecutar la suite de pruebas.
+
+## 11. Criterios de finalización
+
+Consideraré terminado el backend básico cuando:
+
+1. FastAPI arranque correctamente.
+2. PostgreSQL funcione con migraciones reproducibles.
+3. Los endpoints principales operen con datos persistidos.
+4. Los recursos puedan agregarse, editarse y consultarse.
+5. Los pacientes y consultas estén relacionados correctamente.
+6. Los informes puedan revisarse y confirmarse.
+7. El triaje valide y persista los resultados del workflow existente.
+8. La cola refleje estados persistidos.
+9. El frontend pueda utilizar la API sin perder su diseño ni sus funcionalidades.
+10. Existan pruebas automatizadas y documentación de ejecución.
+11. Los secretos estén fuera del repositorio.
+12. Se documente cualquier integración que no haya podido probarse realmente.
+
+## 12. Instrucciones finales para Replit Agent
+
+Trabaja por etapas y ejecuta las pruebas después de cada etapa.
+
+No te limites a crear archivos vacíos, interfaces simuladas o endpoints que devuelvan respuestas fijas. Implementa las operaciones reales contra PostgreSQL.
+
+No reemplaces el frontend, no elimines funcionalidades existentes y no reconstruyas la lógica de IA que ya está en n8n.
+
+No utilices pacientes reales para las pruebas. Usa datos ficticios.
+
+No inventes protocolos clínicos, prioridades de triaje ni reglas médicas.
+
+Al terminar, proporciona:
+- Resumen de lo implementado.
+- Estructura final del backend.
+- Modelos y migraciones creados.
+- Endpoints implementados.
+- Variables de entorno necesarias.
+- Resultado de las pruebas.
+- Instrucciones para ejecutar el backend.
+- Integraciones verificadas y pendientes.
+- Problemas encontrados y pasos siguientes.
+
+**Prioridad: construir primero un backend funcional, seguro y conectado a PostgreSQL, que pueda integrarse con el frontend existente y los dos workflows actuales de n8n.**
