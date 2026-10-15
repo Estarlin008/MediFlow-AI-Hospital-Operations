@@ -1,13 +1,13 @@
 # MediFlow AI
 
-Interfaz de operación hospitalaria con datos demo y una frontera preparada para integración n8n.
+Interfaz de operación hospitalaria con frontend React y backend FastAPI preparado para PostgreSQL en Supabase e integración n8n.
 
 ## Run & Operate
 
 - `pnpm --filter @workspace/mediflow-ai run dev` — run the web artifact
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-server run dev` — run the existing API artifact when needed
+- `pnpm --filter @workspace/api-server run dev` — legacy Express artifact; the clinical API runs with the FastAPI commands in `artifacts/api-server/README.md`
 
 ## Stack
 
@@ -29,12 +29,13 @@ Interfaz de operación hospitalaria con datos demo y una frontera preparada para
 - El transporte n8n está aislado en un único cliente con timeout y validación Zod.
 - Las prioridades y reglas clínicas llegan como resultado externo; el frontend no las calcula.
 - Las variables `VITE_*` son públicas y nunca deben contener secretos.
-- El alcance actual es frontend exclusivamente: no agregar backend, base de datos, endpoints ni migraciones.
+- El frontend mantiene un modo `mock` seguro para demostraciones.
+- El backend FastAPI es la frontera autorizada para PostgreSQL y n8n; el navegador no debe contener secretos.
 - Las altas y cambios en modo demo solo viven en el estado de la sesión; no presentarlos como guardados permanentemente.
 
 ## Integraciones pendientes
 
-- Backend y base de datos: no están implementados; las operaciones de demostración no persisten tras recargar.
+- Backend y base de datos: existe una implementación FastAPI inicial y una migración de esquema; la conexión real a Supabase aún requiere secretos válidos.
 - IA clínica y reconocimiento de voz: no están conectados al flujo completo; no indicar que hubo análisis clínico o transcripción real.
 - n8n: la integración configurada no cubre el flujo completo; las altas de médicos, camas y áreas aún no tienen una operación de guardado.
 

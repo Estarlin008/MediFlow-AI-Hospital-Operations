@@ -3,10 +3,10 @@
 ## Alcance del MVP
 
 MediFlow AI separa la interfaz, los servicios de dominio y el transporte HTTP.
-El modo `mock` es el modo seguro por defecto y no necesita red. El modo `n8n`
-consume endpoints públicos configurables desde el navegador, pero no incorpora
-autenticación real ni secretos. No se deben colocar API keys, tokens, secretos de
-webhook ni credenciales privadas en variables `VITE_*`.
+El modo `mock` es el modo seguro por defecto y no necesita red. El adaptador
+`n8n` directo del frontend se conserva como compatibilidad de demostración, pero
+no debe usarse para producción: los workflows clínicos reales deben invocarse
+desde FastAPI, que guarda los secretos y valida la autorización.
 
 La integración queda preparada para que n8n entregue resultados ya calculados.
 MediFlow presenta y confirma prioridades; no calcula prioridades clínicas en el
@@ -90,11 +90,18 @@ original para logging controlado. No se silencian respuestas inválidas.
 
 ## Qué sigue siendo mock
 
-En esta entrega, los fixtures de pacientes, episodios, triaje, camas, alertas,
+En modo `mock`, los fixtures de pacientes, episodios, triaje, camas, alertas,
 resúmenes clínicos, informes, auditoría y dashboard viven en
 `src/data/mock-data.ts`. Los servicios mock los clonan para evitar mutaciones
 entre pantallas. La UI conserva algunas vistas demostrativas basadas en esos
 fixtures mientras las siguientes tareas consumen esta frontera de servicios.
+
+El backend FastAPI vive en `artifacts/api-server`. Su cliente n8n usa
+`N8N_BASE_URL`, `N8N_AUTH_HEADER_NAME` y `N8N_AUTH_HEADER_VALUE`, que deben
+permanecer fuera del frontend. Las rutas clínicas establecidas por el backend
+son `/api/consultations/{id}/process-report` y
+`/api/consultations/{id}/triage`; sus respuestas se validan y los resultados
+confirmados se persisten en PostgreSQL.
 
 Esto no es una integración hospitalaria real: no hay autenticación, persistencia,
 autorización por rol, cifrado extremo a extremo, reconciliación con HIS/LIS,

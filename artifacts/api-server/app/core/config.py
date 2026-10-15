@@ -23,9 +23,15 @@ class Settings(BaseSettings):
     n8n_base_url: str | None = None
     n8n_triage_path: str = "/webhook/mediflow/triage"
     n8n_consultation_path: str = "/webhook/mediflow/consultation"
-    n8n_api_key: SecretStr | None = None
-    n8n_auth_header: str = "X-N8N-API-KEY"
+    n8n_auth_header_name: str | None = None
+    n8n_auth_header_value: SecretStr | None = None
     n8n_timeout_seconds: float = 12.0
+
+    @field_validator("n8n_auth_header_name")
+    @classmethod
+    def normalize_n8n_auth_header_name(cls, value: str | None) -> str | None:
+        normalized = value.strip() if value else None
+        return normalized or None
 
     @field_validator("database_url")
     @classmethod

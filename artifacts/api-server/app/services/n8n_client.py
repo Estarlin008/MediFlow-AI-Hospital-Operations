@@ -14,8 +14,9 @@ class N8nClient:
         self.settings = get_settings()
 
     def _headers(self) -> dict[str, str]:
-        key = self.settings.n8n_api_key
-        if not self.settings.n8n_base_url or key is None:
+        header_name = self.settings.n8n_auth_header_name
+        header_value = self.settings.n8n_auth_header_value
+        if not self.settings.n8n_base_url or not header_name or header_value is None:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="The n8n integration is not configured.",
@@ -23,7 +24,7 @@ class N8nClient:
         return {
             "Accept": "application/json",
             "Content-Type": "application/json",
-            self.settings.n8n_auth_header: key.get_secret_value(),
+            header_name: header_value.get_secret_value(),
         }
 
     async def post(self, path: str, payload: dict[str, Any]) -> Any:

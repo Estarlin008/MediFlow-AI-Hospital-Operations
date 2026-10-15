@@ -1,9 +1,9 @@
 # MediFlow AI
 
-MediFlow AI is a hospital operations interface for demonstrating patient intake,
-emergency episodes, triage results, resources, and operational audit events.
-The web artifact currently uses centralized demo data and has an adapter boundary
-for a future n8n connection.
+MediFlow AI is a hospital operations interface for patient intake, emergency
+episodes, triage results, resources, and operational audit events. The repository
+contains a React/Vite frontend and a FastAPI backend prepared for PostgreSQL on
+Supabase and synchronous n8n workflows.
 
 ## Run
 
@@ -11,8 +11,8 @@ for a future n8n connection.
 pnpm --filter @workspace/mediflow-ai run dev
 ```
 
-The default mode is `mock`; it does not require a backend, `VITE_N8N_BASE_URL`,
-or credentials. For repository-wide checks:
+The default frontend mode is `mock`; it does not require a backend,
+`VITE_N8N_BASE_URL`, or credentials. For repository-wide checks:
 
 ```bash
 pnpm --filter @workspace/mediflow-ai run typecheck
@@ -34,5 +34,8 @@ configuration, routes, and limitations.
 - `src/integration/http-client.ts` is the only n8n transport client. Components
   do not call `fetch` or know n8n URLs.
 
-This artifact is a frontend demonstration. It does not make clinical decisions,
-replace a hospital information system, or claim a live hospital integration.
+The default frontend data source remains a demonstration mode. The backend is
+the only component intended to access clinical PostgreSQL data or call n8n. The
+application does not make clinical decisions, replace a hospital information
+system, or claim a live hospital integration until those external services are
+configured and verified.
